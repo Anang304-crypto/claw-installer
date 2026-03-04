@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "multi-llm": {
+      "command": "node",
+      "args": ["/Users/smartchoice/Projects/claude-code-multi-llm/dist/index.js"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}"
+      }
+    }
+  }
+}
