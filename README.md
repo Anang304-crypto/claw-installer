@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="docs/logo.png" alt="ClawInstaller" width="120">
-</p>
-
-<h1 align="center">ClawInstaller</h1>
+<h1 align="center">🐾 ClawInstaller</h1>
 
 <p align="center">
   <strong>macOS 安裝精靈 — 讓 OpenClaw 設定從 30 分鐘變成 3 分鐘</strong>
@@ -23,8 +19,9 @@
 
 ---
 
-<!-- TODO: 加入 showcase 截圖 -->
-<!-- ![ClawInstaller Screenshot](docs/showcase.png) -->
+<p align="center">
+  <img src="docs/showcase.png" alt="ClawInstaller 安裝流程截圖" width="800">
+</p>
 
 ## 為什麼需要 ClawInstaller？
 
