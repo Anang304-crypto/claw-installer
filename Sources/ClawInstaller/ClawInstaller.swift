@@ -10,8 +10,8 @@ struct ClawInstallerApp: App {
         WindowGroup {
             MainView()
                 .environmentObject(appState)
-                .frame(minWidth: 800, minHeight: 700)
-                .frame(width: 860, height: 720)
+                .frame(minWidth: 800, minHeight: 750)
+                .frame(width: 880, height: 820)
         }
         .windowResizability(.contentMinSize)
 
@@ -59,18 +59,29 @@ struct Sidebar: View {
         (.support, "questionmark.bubble", "AI Support"),
     ]
 
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
+    }
+
     var body: some View {
-        List(steps, id: \.0) { step, icon, label in
-            Button {
-                appState.currentStep = step
-            } label: {
-                Label(label, systemImage: icon)
+        VStack(spacing: 0) {
+            List(steps, id: \.0) { step, icon, label in
+                Button {
+                    appState.currentStep = step
+                } label: {
+                    Label(label, systemImage: icon)
+                }
+                .buttonStyle(.plain)
+                .padding(.vertical, 4)
+                .foregroundColor(appState.currentStep == step ? .accentColor : .primary)
             }
-            .buttonStyle(.plain)
-            .padding(.vertical, 4)
-            .foregroundColor(appState.currentStep == step ? .accentColor : .primary)
+            .listStyle(.sidebar)
+
+            Text("v\(appVersion)")
+                .font(.caption2)
+                .foregroundStyle(.secondary.opacity(0.6))
+                .padding(.bottom, 8)
         }
-        .listStyle(.sidebar)
         .navigationTitle("ClawInstaller")
     }
 }
