@@ -13,9 +13,87 @@ actor BackendService {
 
     init() {
         let urlString = ProcessInfo.processInfo.environment["CLAW_BACKEND_URL"]
-            ?? "http://localhost:3200"
+            ?? "https://clawinstaller.up.railway.app"
         self.baseURL = URL(string: urlString)!
         self.deviceId = BackendService.generateDeviceId()
+    }
+
+    // MARK: - Auth (Email OTP)
+
+    struct SendOTPRequest: Codable {
+        let email: String
+    }
+
+    struct SendOTPResponse: Codable {
+        let sent: Bool?
+        let dev: Bool?
+        let error: String?
+    }
+
+    struct VerifyRequest: Codable {
+        let email: String
+        let code: String
+    }
+
+    struct VerifyResponse: Codable {
+        let verified: Bool?
+        let user: AuthUser?
+        let token: String?
+        let error: String?
+    }
+
+    struct AuthUser: Codable {
+        let id: String
+        let email: String
+        let name: String?
+        let plan: String
+    }
+
+    func sendOTP(email: String) async throws {
+        let url = baseURL.appendingPathComponent("api/auth/send-otp")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 15
+
+        let body = SendOTPRequest(email: email)
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw BackendError.invalidResponse
+        }
+
+        if httpResponse.statusCode != 200 {
+            let decoded = try? JSONDecoder().decode(SendOTPResponse.self, from: data)
+            throw BackendError.serverError(decoded?.error ?? "HTTP \(httpResponse.statusCode)")
+        }
+    }
+
+    func verifyOTP(email: String, code: String) async throws -> VerifyResponse {
+        let url = baseURL.appendingPathComponent("api/auth/verify")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 15
+
+        let body = VerifyRequest(email: email, code: code)
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw BackendError.invalidResponse
+        }
+
+        let decoded = try JSONDecoder().decode(VerifyResponse.self, from: data)
+
+        if httpResponse.statusCode != 200 {
+            throw BackendError.serverError(decoded.error ?? "HTTP \(httpResponse.statusCode)")
+        }
+
+        return decoded
     }
 
     // MARK: - AI Chat
