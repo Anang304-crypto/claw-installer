@@ -29,6 +29,8 @@ struct MainView: View {
             Sidebar()
         } detail: {
             switch appState.currentStep {
+            case .welcome:
+                WelcomeView()
             case .preflight:
                 PreflightView()
             case .install:
@@ -48,6 +50,7 @@ struct Sidebar: View {
     @EnvironmentObject var appState: AppState
 
     private let steps: [(AppState.Step, String, String)] = [
+        (.welcome, "hand.wave", "Welcome"),
         (.preflight, "checkmark.shield", "Preflight Check"),
         (.install, "arrow.down.circle", "Install"),
         (.channels, "bubble.left.and.bubble.right", "Channels"),

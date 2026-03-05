@@ -5,14 +5,21 @@ import SwiftUI
 @MainActor
 final class AppState: ObservableObject {
     enum Step: Int, CaseIterable {
-        case preflight = 0
+        case welcome = 0
+        case preflight
         case install
         case channels
         case monitor
         case support
     }
 
-    @Published var currentStep: Step = .preflight
+    @Published var currentStep: Step = .welcome
+
+    // Auth state
+    @AppStorage("userEmail") var userEmail: String = ""
+    @AppStorage("userToken") var userToken: String = ""
+    @AppStorage("userId") var userId: String = ""
+    var isLoggedIn: Bool { !userToken.isEmpty }
     @Published var installProgress: Double = 0
     @Published var gatewayRunning: Bool = false
     @Published var isInstalling: Bool = false
