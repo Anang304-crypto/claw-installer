@@ -1,10 +1,15 @@
-# ClawInstaller v0.1.1-beta
+# ClawInstaller v0.1.2-beta
 
 > macOS 原生 OpenClaw 安裝精靈 — 內建 AI 助手
 
-## 更新內容
+## v0.1.2 更新內容
 
-ClawInstaller 首次公開測試版。一個 App 搞定 OpenClaw 安裝、頻道設定、AI 除錯。
+### 修復與改善
+
+- **視窗高度修正** — 環境檢測頁面不再被裁切，視窗可自由調整大小
+- **pnpm 錯誤辨識** — 正確辨識 `ERR_PNPM_NO_GLOBAL_BIN_DIR` 錯誤，提供一鍵修復
+- **一鍵回報問題** — 安裝失敗時可直接提交 GitHub Issue，自動帶入錯誤資訊與安裝記錄
+- **錯誤訊息中文化** — 所有安裝錯誤提示改為繁體中文
 
 ### 功能模組
 
@@ -28,7 +33,7 @@ ClawInstaller 首次公開測試版。一個 App 搞定 OpenClaw 安裝、頻道
 
 ### 直接下載
 
-1. 下載下方的 `ClawInstaller-0.1.1-beta-macos.dmg`
+1. 下載下方的 `ClawInstaller-0.1.2-beta-macos.dmg`
 2. 打開 DMG，將 ClawInstaller 拖入「應用程式」資料夾
 3. 首次開啟：右鍵 → 打開（繞過 macOS 安全提示）
 4. 如果看到「ClawInstaller 已損壞」，請在終端機執行：
