@@ -1,4 +1,4 @@
-# ClawInstaller v0.1.0-beta
+# ClawInstaller v0.1.1-beta
 
 > macOS-native setup wizard for OpenClaw — with built-in AI assistant
 
@@ -28,7 +28,7 @@ First public beta of ClawInstaller. Install OpenClaw, configure channels, and ge
 
 ### Direct Download
 
-1. Download `ClawInstaller-0.1.0-beta-macos.dmg` below
+1. Download `ClawInstaller-0.1.1-beta-macos.dmg` below
 2. Open DMG, drag ClawInstaller to Applications
 3. Right-click > Open (first time only, to bypass Gatekeeper)
 4. If you see "ClawInstaller is damaged", run this in Terminal:
