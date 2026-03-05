@@ -75,38 +75,52 @@ final class PreflightChecker: ObservableObject {
     }
 
     private func checkNode() async -> PreflightCheck {
-        // Try multiple common paths
-        let nodePaths = [
-            "node",
-            "/opt/homebrew/bin/node",
-            "/usr/local/bin/node",
-            "~/.nvm/versions/node/*/bin/node"
-        ]
-        
-        var foundVersion: String?
-        
-        for path in nodePaths {
-            let result = await ShellRunner.run("\(path) --version 2>/dev/null")
-            if result.success && !result.stdout.isEmpty {
-                foundVersion = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-                break
-            }
-        }
-        
+        // ShellRunner already has enhanced PATH — just use `node`
+        // Also try `which node` to confirm it's actually reachable
+        let result = await ShellRunner.run("node --version 2>/dev/null")
+        let foundVersion: String? = (result.success && !result.stdout.isEmpty)
+            ? result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+            : nil
+
+        // Check if this is a fresh Mac (no Homebrew either)
+        let hasHomebrew = FileManager.default.fileExists(atPath: "/opt/homebrew/bin/brew")
+            || FileManager.default.fileExists(atPath: "/usr/local/bin/brew")
+
         guard let version = foundVersion else {
+            let manualSteps: [String]
+            let fixCommand: String?
+
+            if hasHomebrew {
+                // Has Homebrew, just install Node
+                fixCommand = "brew install node@22"
+                manualSteps = [
+                    "Run: brew install node@22",
+                    "Or visit https://nodejs.org/ to download Node.js 22 LTS"
+                ]
+            } else {
+                // Fresh Mac — guide to nodejs.org .pkg (simplest path)
+                fixCommand = nil
+                manualSteps = [
+                    "1. Visit https://nodejs.org/",
+                    "2. Download Node.js 22 LTS (.pkg installer)",
+                    "3. Open the .pkg and follow the installer",
+                    "4. Restart ClawInstaller after installation",
+                    "",
+                    "Or install via Homebrew:",
+                    "  /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"",
+                    "  brew install node@22"
+                ]
+            }
+
             return PreflightCheck(
                 name: "Node.js",
                 description: "Version ≥ \(requiredNodeMajor) required",
                 status: .fail,
-                detail: "Node.js not found",
+                detail: hasHomebrew ? "Node.js not found" : "Node.js not found (fresh Mac detected)",
                 fixAction: FixAction(
-                    label: "Install Node.js",
-                    command: "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\" && brew install node@22",
-                    manualSteps: [
-                        "Visit https://nodejs.org/",
-                        "Download Node.js 22 LTS",
-                        "Run the installer"
-                    ]
+                    label: hasHomebrew ? "Install Node.js" : "Install Node.js (see steps)",
+                    command: fixCommand,
+                    manualSteps: manualSteps
                 ),
                 icon: "xmark.octagon.fill"
             )

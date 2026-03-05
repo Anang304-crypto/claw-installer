@@ -18,3 +18,7 @@ mcp/dist/
 # Release artifacts (use GitHub Releases instead)
 release/*.zip
 release/*.sha256
+
+# MCP binary artifacts
+mcp-server-darwin-arm64
+desktop-mcp-adapter.js

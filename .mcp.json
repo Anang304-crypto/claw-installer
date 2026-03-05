@@ -10,7 +10,12 @@
     },
     "gh-issues": {
       "command": "node",
-      "args": ["/Users/smartchoice/Projects/claw-installer/mcp/dist/index.js"]
+      "args": ["/Users/smartchoice/Projects/clawinstaller/claw-installer/mcp/dist/index.js"]
+    },
+    "pencil": {
+      "command": "/Applications/Pencil.app/Contents/Resources/app.asar.unpacked/out/mcp-server-darwin-arm64",
+      "args": ["--app", "desktop"],
+      "type": "stdio"
     }
   }
 }

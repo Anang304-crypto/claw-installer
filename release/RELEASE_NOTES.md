@@ -1,51 +1,43 @@
-# ClawInstaller v0.1.0-beta 🚀
+# ClawInstaller v0.1.0-beta
 
-> The official macOS setup wizard for OpenClaw AI assistant
+> macOS-native setup wizard for OpenClaw — with built-in AI assistant
 
 ## What's New
 
-This is the first public beta of ClawInstaller — a native macOS app that makes setting up OpenClaw effortless.
+First public beta of ClawInstaller. Install OpenClaw, configure channels, and get AI-powered troubleshooting — all in one native app.
 
-### ✨ Highlights
+### Modules
 
 | Module | Status | Description |
 |--------|--------|-------------|
-| 🔍 Preflight Check | ✅ Complete | System requirements verification |
-| 📦 Install Wizard | ✅ Complete | One-click OpenClaw installation |
-| 📱 Channel Setup | ✅ Complete | Telegram, Discord, WhatsApp guides |
-| 💓 Health Monitor | 🚧 Preview | Gateway status & controls |
-| 🤖 AI Support | 🚧 Preview | Claude-powered troubleshooting |
+| Preflight Check | Complete | Auto-detects Node.js, arch, package managers. Fix buttons for common issues. |
+| Install Wizard | Complete | One-click install with real-time progress, error detection, auto-fix. |
+| Channel Setup | Complete | Step-by-step guides for Telegram, Discord, WhatsApp. |
+| LLM Setup | Complete | Choose AI provider (Anthropic, Google, Ollama) with key validation. |
+| AI Support | Complete | Chat with pre-tuned AI assistant. Context-aware, Traditional Chinese. |
+| Health Monitor | Preview | Gateway status display. Full controls coming soon. |
 
-### Screenshots
+### Key Features
 
-<details>
-<summary>📸 View Screenshots</summary>
-
-#### Preflight Check
-![Preflight Check](docs/screenshots/preflight.png)
-
-#### Install Wizard
-![Install Wizard](docs/screenshots/install.png)
-
-#### Channel Setup
-![Channel Setup](docs/screenshots/channels.png)
-
-</details>
+- **Smart Error Guidance** — When things fail, tap "Ask AI Assistant" to get help with full system context
+- **Fresh Mac Support** — Guides users through Node.js installation even on brand new Macs
+- **Zero Config AI** — Built-in AI assistant works immediately, no API key needed
+- **Dynamic PATH Detection** — Supports nvm, fnm, volta, asdf, Homebrew (Apple Silicon + Intel)
 
 ## Installation
-
-### Homebrew (Recommended)
-
-```bash
-brew tap openclaw/tap
-brew install --cask claw-installer
-```
 
 ### Direct Download
 
 1. Download `ClawInstaller-0.1.0-beta-macos.zip` below
 2. Unzip and drag to Applications
-3. Right-click → Open (first time only, to bypass Gatekeeper)
+3. Right-click > Open (first time only, to bypass Gatekeeper)
+
+### Homebrew
+
+```bash
+brew tap clawinstaller/tap
+brew install --cask claw-installer
+```
 
 ## System Requirements
 
@@ -55,21 +47,21 @@ brew install --cask claw-installer
 
 ## Quick Start
 
-1. **Run Preflight Check** — Verify your system is ready
+1. **Preflight Check** — Verify your system is ready
 2. **Install OpenClaw** — One-click installation
 3. **Configure Channels** — Set up Telegram, Discord, or WhatsApp
-4. **Start Using** — Run `openclaw` in Terminal
+4. **Set Up LLM** — Choose your AI provider
+5. **Ask AI** — Get help anytime via the AI Support tab
 
-## Checksums
+## Known Issues
 
-```
-SHA256 (ClawInstaller-0.1.0-beta-macos.zip) = <sha256>
-```
+- App is unsigned (Gatekeeper will prompt on first launch)
+- Health Monitor is preview only (full controls in next release)
+- WhatsApp QR scanning requires Gateway to be running
 
 ## Feedback
 
-Found a bug? Have a suggestion? Please [open an issue](https://github.com/openclaw/claw-installer/issues/new)!
+Found a bug? [Open an issue](https://github.com/clawinstaller/claw-installer/issues/new)
 
----
-
-**Full Changelog**: https://github.com/openclaw/claw-installer/blob/main/CHANGELOG.md
+Telegram: [@clawinstaller](https://t.me/clawinstaller)
+Threads: [@0xhoward_peng](https://www.threads.com/@0xhoward_peng)

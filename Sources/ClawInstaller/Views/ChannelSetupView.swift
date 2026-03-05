@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct ChannelSetupView: View {
+    @EnvironmentObject var appState: AppState
     @StateObject private var configManager = ConfigManager.shared
     @State private var selectedChannels: Set<ChannelType> = []
     @State private var currentStep: SetupStep = .selection
@@ -109,6 +110,10 @@ struct ChannelSetupView: View {
                 
                 Button("Continue") {
                     if !selectedChannels.isEmpty {
+                        appState.trackEvent("channel_setup_start", module: "channels", meta: [
+                            "channels": selectedChannels.map(\.rawValue).sorted().joined(separator: ","),
+                            "count": String(selectedChannels.count)
+                        ])
                         currentStep = .configuring
                         currentChannelIndex = 0
                     }
@@ -156,6 +161,10 @@ struct ChannelSetupView: View {
         if currentChannelIndex + 1 < channelsToSetup.count {
             currentChannelIndex += 1
         } else {
+            appState.trackEvent("channel_setup_complete", module: "channels", meta: [
+                "channels": channelsToSetup.map(\.rawValue).joined(separator: ","),
+                "count": String(channelsToSetup.count)
+            ])
             currentStep = .complete
         }
     }

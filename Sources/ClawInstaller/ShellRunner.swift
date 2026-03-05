@@ -9,6 +9,70 @@ enum ShellRunner {
         var success: Bool { exitCode == 0 }
     }
 
+    /// Build a comprehensive PATH that covers common Node.js install locations
+    private static func buildEnhancedPATH() -> (env: [String: String], nodePaths: [String]) {
+        var env = ProcessInfo.processInfo.environment
+        let home = env["HOME"] ?? NSHomeDirectory()
+
+        var extraPaths: [String] = [
+            "/opt/homebrew/bin",       // Homebrew (Apple Silicon)
+            "/usr/local/bin",          // Homebrew (Intel) / manual installs
+        ]
+
+        // nvm: find latest installed version dynamically
+        let nvmDir = env["NVM_DIR"] ?? "\(home)/.nvm"
+        let nvmVersionsDir = "\(nvmDir)/versions/node"
+        if let versions = try? FileManager.default.contentsOfDirectory(atPath: nvmVersionsDir) {
+            // Sort versions descending, prefer v22+
+            let sorted = versions
+                .filter { $0.hasPrefix("v") }
+                .sorted { a, b in
+                    let aMajor = Int(a.dropFirst().split(separator: ".").first ?? "0") ?? 0
+                    let bMajor = Int(b.dropFirst().split(separator: ".").first ?? "0") ?? 0
+                    return aMajor > bMajor
+                }
+            for v in sorted {
+                extraPaths.append("\(nvmVersionsDir)/\(v)/bin")
+            }
+        }
+
+        // fnm
+        let fnmDir = "\(home)/Library/Application Support/fnm/node-versions"
+        if let versions = try? FileManager.default.contentsOfDirectory(atPath: fnmDir) {
+            for v in versions.filter({ $0.hasPrefix("v") }) {
+                extraPaths.append("\(fnmDir)/\(v)/installation/bin")
+            }
+        }
+        // fnm also uses ~/.local/share/fnm on some setups
+        let fnmAlt = "\(home)/.local/share/fnm/node-versions"
+        if let versions = try? FileManager.default.contentsOfDirectory(atPath: fnmAlt) {
+            for v in versions.filter({ $0.hasPrefix("v") }) {
+                extraPaths.append("\(fnmAlt)/\(v)/installation/bin")
+            }
+        }
+
+        // volta
+        extraPaths.append("\(home)/.volta/bin")
+
+        // asdf
+        let asdfNodeDir = "\(home)/.asdf/installs/nodejs"
+        if let versions = try? FileManager.default.contentsOfDirectory(atPath: asdfNodeDir) {
+            for v in versions {
+                extraPaths.append("\(asdfNodeDir)/\(v)/bin")
+            }
+        }
+
+        // n (tj/n version manager)
+        extraPaths.append("/usr/local/n/versions/node/22.0.0/bin") // common default
+        extraPaths.append("\(home)/n/bin")
+
+        // Append existing PATH last
+        extraPaths.append(env["PATH"] ?? "")
+
+        env["PATH"] = extraPaths.joined(separator: ":")
+        return (env, extraPaths)
+    }
+
     /// Run a shell command synchronously
     static func run(_ command: String, timeout: TimeInterval = 30) async -> Result {
         await withCheckedContinuation { continuation in
@@ -20,17 +84,8 @@ enum ShellRunner {
             process.arguments = ["-c", command]
             process.standardOutput = stdoutPipe
             process.standardError = stderrPipe
-            
-            // Merge PATH for homebrew, nvm, etc.
-            var env = ProcessInfo.processInfo.environment
-            let home = env["HOME"] ?? NSHomeDirectory()
-            let paths = [
-                "/opt/homebrew/bin",
-                "/usr/local/bin",
-                "\(home)/.nvm/versions/node/v22/bin",
-                env["PATH"] ?? ""
-            ]
-            env["PATH"] = paths.joined(separator: ":")
+
+            let (env, _) = buildEnhancedPATH()
             process.environment = env
 
             do {
@@ -72,16 +127,7 @@ enum ShellRunner {
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
         
-        // Merge PATH for homebrew, nvm, etc.
-        var env = ProcessInfo.processInfo.environment
-        let home = env["HOME"] ?? NSHomeDirectory()
-        let paths = [
-            "/opt/homebrew/bin",
-            "/usr/local/bin",
-            "\(home)/.nvm/versions/node/v22/bin",
-            env["PATH"] ?? ""
-        ]
-        env["PATH"] = paths.joined(separator: ":")
+        let (env, _) = buildEnhancedPATH()
         process.environment = env
 
         do {

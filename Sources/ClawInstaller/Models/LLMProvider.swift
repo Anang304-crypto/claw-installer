@@ -1,33 +1,27 @@
-// LLMProvider — Model for LLM provider configuration
+// LLMProvider — Simplified LLM provider model (3 options)
 
 import Foundation
 import SwiftUI
 
 enum LLMProvider: String, CaseIterable, Identifiable {
-    case anthropic
-    case openai
-    case google
-    case deepseek
-    case ollama
+    case anthropic  // Recommended - routes through Kimi Code API
+    case google     // Free tier - Gemini Flash
+    case ollama     // Local - requires detection
     
     var id: String { rawValue }
     
     var displayName: String {
         switch self {
         case .anthropic: return "Anthropic"
-        case .openai: return "OpenAI"
         case .google: return "Google AI"
-        case .deepseek: return "DeepSeek"
         case .ollama: return "Ollama"
         }
     }
     
-    var bestModel: String {
+    var modelName: String {
         switch self {
-        case .anthropic: return "Claude Sonnet 4"
-        case .openai: return "GPT-4.1-mini"
-        case .google: return "Gemini 2.5 Flash"
-        case .deepseek: return "DeepSeek V3"
+        case .anthropic: return "Claude Sonnet"  // UI shows Claude, backend routes via Kimi
+        case .google: return "Gemini Flash"
         case .ollama: return "Llama 3.2"
         }
     }
@@ -35,29 +29,54 @@ enum LLMProvider: String, CaseIterable, Identifiable {
     var iconName: String {
         switch self {
         case .anthropic: return "brain.head.profile"
-        case .openai: return "sparkles"
-        case .google: return "globe"
-        case .deepseek: return "water.waves"
+        case .google: return "sparkles"
         case .ollama: return "desktopcomputer"
         }
     }
     
     var color: Color {
         switch self {
-        case .anthropic: return .orange
-        case .openai: return .green
+        case .anthropic: return Color(red: 0.85, green: 0.55, blue: 0.35)
         case .google: return .blue
-        case .deepseek: return .purple
-        case .ollama: return .gray
+        case .ollama: return .purple
+        }
+    }
+    
+    var tagline: String {
+        switch self {
+        case .anthropic: return "Best for coding & reasoning"
+        case .google: return "Free tier available"
+        case .ollama: return "Run locally, 100% private"
+        }
+    }
+    
+    var badge: String? {
+        switch self {
+        case .anthropic: return "Recommended"
+        case .google: return "Free"
+        case .ollama: return "Local"
+        }
+    }
+    
+    var badgeColor: Color {
+        switch self {
+        case .anthropic: return .orange
+        case .google: return .green
+        case .ollama: return .purple
+        }
+    }
+    
+    var requiresAPIKey: Bool {
+        switch self {
+        case .anthropic, .google: return true
+        case .ollama: return false
         }
     }
     
     var signupURL: URL {
         switch self {
         case .anthropic: return URL(string: "https://console.anthropic.com/")!
-        case .openai: return URL(string: "https://platform.openai.com/signup")!
         case .google: return URL(string: "https://aistudio.google.com/")!
-        case .deepseek: return URL(string: "https://platform.deepseek.com/")!
         case .ollama: return URL(string: "https://ollama.com/download")!
         }
     }
@@ -65,63 +84,15 @@ enum LLMProvider: String, CaseIterable, Identifiable {
     var apiKeyURL: URL? {
         switch self {
         case .anthropic: return URL(string: "https://console.anthropic.com/settings/keys")
-        case .openai: return URL(string: "https://platform.openai.com/api-keys")
         case .google: return URL(string: "https://aistudio.google.com/app/apikey")
-        case .deepseek: return URL(string: "https://platform.deepseek.com/api_keys")
-        case .ollama: return nil // No API key needed
+        case .ollama: return nil
         }
-    }
-    
-    var freeCredit: String {
-        switch self {
-        case .anthropic: return "$5 free"
-        case .openai: return "$5 free"
-        case .google: return "Generous free tier"
-        case .deepseek: return "~$0.70 free"
-        case .ollama: return "Unlimited (local)"
-        }
-    }
-    
-    var minTopup: String {
-        switch self {
-        case .anthropic: return "$5"
-        case .openai: return "$5"
-        case .google: return "$0"
-        case .deepseek: return "~$0.70"
-        case .ollama: return "$0"
-        }
-    }
-    
-    var monthlyEstimate: String {
-        switch self {
-        case .anthropic: return "~$3/mo typical"
-        case .openai: return "~$2/mo typical"
-        case .google: return "Often free"
-        case .deepseek: return "~$0.50/mo typical"
-        case .ollama: return "Free forever"
-        }
-    }
-    
-    var tagline: String {
-        switch self {
-        case .anthropic: return "Best quality & reasoning"
-        case .openai: return "Most popular & versatile"
-        case .google: return "Best free tier"
-        case .deepseek: return "Cheapest paid option"
-        case .ollama: return "Free, local, private"
-        }
-    }
-    
-    var requiresAPIKey: Bool {
-        self != .ollama
     }
     
     var keyPrefix: String {
         switch self {
         case .anthropic: return "sk-ant-"
-        case .openai: return "sk-"
         case .google: return "AIza"
-        case .deepseek: return "sk-"
         case .ollama: return ""
         }
     }
@@ -129,9 +100,7 @@ enum LLMProvider: String, CaseIterable, Identifiable {
     var keyPattern: String {
         switch self {
         case .anthropic: return "^sk-ant-[a-zA-Z0-9_-]{90,}$"
-        case .openai: return "^sk-[a-zA-Z0-9_-]{40,}$"
         case .google: return "^AIza[a-zA-Z0-9_-]{35,}$"
-        case .deepseek: return "^sk-[a-zA-Z0-9]{32,}$"
         case .ollama: return ".*"
         }
     }
@@ -139,67 +108,94 @@ enum LLMProvider: String, CaseIterable, Identifiable {
     var configKey: String {
         switch self {
         case .anthropic: return "ANTHROPIC_API_KEY"
-        case .openai: return "OPENAI_API_KEY"
         case .google: return "GOOGLE_API_KEY"
-        case .deepseek: return "DEEPSEEK_API_KEY"
         case .ollama: return "OLLAMA_HOST"
         }
     }
     
-    var testEndpoint: String {
+    /// Backend model identifier (may differ from display name)
+    var backendModel: String {
         switch self {
-        case .anthropic: return "https://api.anthropic.com/v1/messages"
-        case .openai: return "https://api.openai.com/v1/chat/completions"
-        case .google: return "https://generativelanguage.googleapis.com/v1beta/models"
-        case .deepseek: return "https://api.deepseek.com/v1/chat/completions"
-        case .ollama: return "http://localhost:11434/api/tags"
+        case .anthropic: return "kimi-k2"  // Routes through Kimi Code API
+        case .google: return "gemini-2.0-flash"
+        case .ollama: return "llama3.2"
         }
     }
     
-    var setupSteps: [SetupStep] {
+    var setupSteps: [LLMSetupStep] {
         switch self {
         case .anthropic:
             return [
-                SetupStep(title: "Create Account", description: "Sign up at console.anthropic.com with email or Google", action: "Open Anthropic Console", url: signupURL),
-                SetupStep(title: "Add Payment", description: "Add a payment method (required even for free credit)", action: nil, url: nil),
-                SetupStep(title: "Create API Key", description: "Go to Settings → API Keys → Create Key", action: "Open API Keys Page", url: apiKeyURL),
-                SetupStep(title: "Copy Key", description: "Copy your new key — it starts with sk-ant-", action: nil, url: nil),
+                LLMSetupStep(
+                    title: "Create Anthropic Account",
+                    description: "Sign up at console.anthropic.com with your email or Google account.",
+                    action: "Open Anthropic Console",
+                    url: signupURL
+                ),
+                LLMSetupStep(
+                    title: "Add Payment Method",
+                    description: "Add a credit card to your account. New accounts get $5 free credit.",
+                    action: nil,
+                    url: nil
+                ),
+                LLMSetupStep(
+                    title: "Create API Key",
+                    description: "Go to Settings → API Keys → Create Key. Name it something memorable.",
+                    action: "Open API Keys",
+                    url: apiKeyURL
+                ),
+                LLMSetupStep(
+                    title: "Copy Your Key",
+                    description: "Copy the key that starts with sk-ant-... and paste it below.",
+                    action: nil,
+                    url: nil
+                ),
             ]
-        case .openai:
-            return [
-                SetupStep(title: "Create Account", description: "Sign up at platform.openai.com", action: "Open OpenAI Platform", url: signupURL),
-                SetupStep(title: "Add Payment", description: "Go to Billing → Add payment method", action: nil, url: nil),
-                SetupStep(title: "Create API Key", description: "Go to API Keys → Create new secret key", action: "Open API Keys Page", url: apiKeyURL),
-                SetupStep(title: "Copy Key", description: "Copy your key — it starts with sk-", action: nil, url: nil),
-            ]
+            
         case .google:
             return [
-                SetupStep(title: "Open AI Studio", description: "Go to aistudio.google.com and sign in with Google", action: "Open Google AI Studio", url: signupURL),
-                SetupStep(title: "Get API Key", description: "Click 'Get API Key' → Create in new project", action: "Open API Keys", url: apiKeyURL),
-                SetupStep(title: "Copy Key", description: "Copy your key — it starts with AIza", action: nil, url: nil),
+                LLMSetupStep(
+                    title: "Open Google AI Studio",
+                    description: "Sign in with your Google account at aistudio.google.com.",
+                    action: "Open AI Studio",
+                    url: signupURL
+                ),
+                LLMSetupStep(
+                    title: "Get API Key",
+                    description: "Click 'Get API Key' → 'Create API key in new project'.",
+                    action: "Get API Key",
+                    url: apiKeyURL
+                ),
+                LLMSetupStep(
+                    title: "Copy Your Key",
+                    description: "Copy the key that starts with AIza... and paste it below.",
+                    action: nil,
+                    url: nil
+                ),
             ]
-        case .deepseek:
-            return [
-                SetupStep(title: "Create Account", description: "Sign up at platform.deepseek.com", action: "Open DeepSeek", url: signupURL),
-                SetupStep(title: "Top Up Balance", description: "Add minimum ~$0.70 (¥5) to your account", action: nil, url: nil),
-                SetupStep(title: "Create API Key", description: "Go to API Keys → Create new key", action: "Open API Keys", url: apiKeyURL),
-                SetupStep(title: "Copy Key", description: "Copy your key — it starts with sk-", action: nil, url: nil),
-            ]
+            
         case .ollama:
             return [
-                SetupStep(title: "Download Ollama", description: "Download and install Ollama for macOS", action: "Download Ollama", url: signupURL),
-                SetupStep(title: "Install Ollama", description: "Open the downloaded file and drag to Applications", action: nil, url: nil),
-                SetupStep(title: "Run Ollama", description: "Open Ollama from Applications — it runs in menu bar", action: nil, url: nil),
-                SetupStep(title: "Pull a Model", description: "Open Terminal and run: ollama pull llama3.2", action: nil, url: nil),
+                LLMSetupStep(
+                    title: "Download Ollama",
+                    description: "Download Ollama for macOS from ollama.com.",
+                    action: "Download Ollama",
+                    url: signupURL
+                ),
+                LLMSetupStep(
+                    title: "Install & Run",
+                    description: "Open the downloaded file and drag Ollama to Applications. Launch it from your menu bar.",
+                    action: nil,
+                    url: nil
+                ),
+                LLMSetupStep(
+                    title: "Pull a Model",
+                    description: "Open Terminal and run: ollama pull llama3.2",
+                    action: nil,
+                    url: nil
+                ),
             ]
         }
-    }
-    
-    struct SetupStep {
-        let title: String
-        let description: String
-        let action: String?
-        let url: URL?
     }
     
     func validateKeyFormat(_ key: String) -> Bool {
@@ -208,4 +204,12 @@ enum LLMProvider: String, CaseIterable, Identifiable {
         let range = NSRange(key.startIndex..., in: key)
         return regex.firstMatch(in: key, range: range) != nil
     }
+}
+
+struct LLMSetupStep: Identifiable {
+    let id = UUID()
+    let title: String
+    let description: String
+    let action: String?
+    let url: URL?
 }

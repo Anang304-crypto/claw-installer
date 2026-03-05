@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct PreflightView: View {
+    @EnvironmentObject var appState: AppState
     @StateObject private var checker = PreflightChecker()
     @State private var showingFixSheet = false
     @State private var selectedCheck: PreflightCheck?
@@ -34,7 +35,13 @@ struct PreflightView: View {
         }
         .frame(minWidth: 600, minHeight: 450)
         .task {
+            appState.trackEvent("preflight_start", module: "preflight")
             await checker.runAll()
+            let failCount = checker.checks.filter { $0.status == .fail }.count
+            appState.trackEvent("preflight_complete", module: "preflight", meta: [
+                "failures": String(failCount),
+                "total": String(checker.checks.count)
+            ])
         }
         .sheet(isPresented: $showingFixSheet) {
             if let check = selectedCheck {
@@ -102,13 +109,16 @@ struct PreflightView: View {
             Spacer()
             
             if checker.hasBlockingIssues {
-                Text("Fix issues before continuing")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Button {
+                    appState.currentStep = .support
+                } label: {
+                    Label("問 AI 助手", systemImage: "questionmark.bubble")
+                }
+                .buttonStyle(.bordered)
             }
-            
+
             Button("Continue") {
-                // Navigate to next module
+                appState.currentStep = .install
             }
             .buttonStyle(.borderedProminent)
             .disabled(checker.hasBlockingIssues || checker.isRunning)

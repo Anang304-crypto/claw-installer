@@ -25,12 +25,17 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           swift build -c release
-          
-          # Create app bundle
+
+          # Create app bundle structure
           mkdir -p ClawInstaller.app/Contents/MacOS
           mkdir -p ClawInstaller.app/Contents/Resources
           cp .build/release/ClawInstaller ClawInstaller.app/Contents/MacOS/
-          
+
+          # Copy app icon if it exists
+          if [ -f Sources/ClawInstaller/Resources/AppIcon.icns ]; then
+            cp Sources/ClawInstaller/Resources/AppIcon.icns ClawInstaller.app/Contents/Resources/
+          fi
+
           cat > ClawInstaller.app/Contents/Info.plist << PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -42,18 +47,24 @@ jobs:
               <string>ai.openclaw.installer</string>
               <key>CFBundleName</key>
               <string>ClawInstaller</string>
+              <key>CFBundleDisplayName</key>
+              <string>ClawInstaller</string>
               <key>CFBundleShortVersionString</key>
               <string>$VERSION</string>
               <key>CFBundleVersion</key>
               <string>1</string>
+              <key>CFBundleIconFile</key>
+              <string>AppIcon</string>
               <key>LSMinimumSystemVersion</key>
               <string>14.0</string>
               <key>NSHighResolutionCapable</key>
               <true/>
+              <key>LSApplicationCategoryType</key>
+              <string>public.app-category.developer-tools</string>
           </dict>
           </plist>
           PLIST
-          
+
           echo -n "APPL????" > ClawInstaller.app/Contents/PkgInfo
       
       - name: Create ZIP
@@ -63,7 +74,7 @@ jobs:
           shasum -a 256 ClawInstaller-$VERSION-macos.zip > ClawInstaller-$VERSION-macos.zip.sha256
       
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             ClawInstaller-*-macos.zip

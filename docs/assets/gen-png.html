@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head><title>ClawInstaller Logo PNG Generator</title></head>
+<body style="background:#333; display:flex; gap:20px; padding:40px; flex-wrap:wrap;">
+  <div>
+    <h2 style="color:white">Dark (GitHub Avatar)</h2>
+    <canvas id="dark" width="512" height="512" style="border:1px solid #555"></canvas>
+    <br><a id="dl-dark" download="clawinstaller-logo-dark.png" style="color:#4af">Download PNG</a>
+  </div>
+  <div>
+    <h2 style="color:white">Light</h2>
+    <canvas id="light" width="512" height="512" style="border:1px solid #555"></canvas>
+    <br><a id="dl-light" download="clawinstaller-logo-light.png" style="color:#4af">Download PNG</a>
+  </div>
+  <div>
+    <h2 style="color:white">Transparent</h2>
+    <canvas id="trans" width="512" height="512" style="border:1px solid #555; background: repeating-conic-gradient(#666 0% 25%, #999 0% 50%) 50% / 20px 20px"></canvas>
+    <br><a id="dl-trans" download="clawinstaller-logo-transparent.png" style="color:#4af">Download PNG</a>
+  </div>
+  <div>
+    <h2 style="color:white">32px Preview</h2>
+    <canvas id="tiny" width="32" height="32" style="border:1px solid #555; image-rendering:pixelated; width:128px; height:128px"></canvas>
+    <p style="color:#aaa">Actual 32px (scaled 4x)</p>
+  </div>
+
+<script>
+const S = 512 / 24;
+
+// Wrench (absolute coords in 24x24)
+const wrench_outline = [
+  [16,4,2,1],[20,4,2,1],
+  [15,5,1,4],[22,5,1,4],
+  [16,9,1,1],[21,9,1,1],
+  [17,10,1,3],[20,10,1,3],
+  [16,13,1,1],[21,13,1,1],
+  [15,14,1,2],[22,14,1,2],
+  [16,16,6,1]
+];
+const wrench_body = [
+  [16,5,2,3],[20,5,2,3],  // U-shape jaw walls
+  [16,8,6,1],              // jaw base
+  [17,9,4,1],              // neck
+  [18,10,2,3],             // shaft
+  [17,13,4,1],             // transition
+  [16,14,6,2]              // handle end
+];
+const wrench_hi = [[16,5,1,4],[16,14,5,1]];
+
+// Lobster (local coords, offset by ox,oy)
+const hat_outline = [
+  [6,-1,4,1],[5,0,1,1],[10,0,1,1],[4,1,1,1],[11,1,1,1],[3,2,1,1],[12,2,1,1]
+];
+const hat_gold = [[6,0,4,1],[5,1,6,1],[4,2,8,1]];
+const hat_hi = [[7,0,2,1],[6,1,3,1]];
+const lobster_outline = [
+  [1,5,1,3],[2,4,1,1],[2,8,1,1],[3,3,1,1],[3,9,1,1],[4,10,1,1],
+  [12,3,1,1],[12,9,1,1],[13,4,1,1],[13,8,1,1],[14,5,1,3],
+  [5,11,6,1],[4,12,1,1],[11,12,1,1],[3,13,1,1],[12,13,1,1],[5,14,6,1]
+];
+const lobster_body = [
+  [5,3,6,1],[4,4,8,1],[3,5,10,1],[3,6,10,1],[3,7,10,1],
+  [4,8,8,1],[5,9,6,1],[5,12,6,1],[6,13,4,1]
+];
+const claws = [
+  [1,6,2,1],[2,5,1,1],[2,7,1,1],[13,6,2,1],[13,5,1,1],[13,7,1,1]
+];
+const eyes_dark = [[6,5,1,1],[9,5,1,1]];
+const eyes_light = [[6,4,1,1],[9,4,1,1]];
+
+function draw(ctx, rects, color, s, ox, oy) {
+  ctx.fillStyle = color;
+  for (const [x, y, w, h] of rects) {
+    ctx.fillRect((ox+x)*s, (oy+y)*s, w*s, h*s);
+  }
+}
+
+function drawLogo(ctx, size, bgColor, dark) {
+  const s = size / 24;
+  ctx.imageSmoothingEnabled = false;
+
+  if (bgColor) {
+    if (bgColor === 'gradient') {
+      const g = ctx.createLinearGradient(0, 0, size/2, size);
+      g.addColorStop(0, '#1e2140');
+      g.addColorStop(1, '#151830');
+      ctx.fillStyle = g;
+    } else {
+      ctx.fillStyle = bgColor;
+    }
+    const r = 3.5 * s;
+    ctx.beginPath();
+    ctx.moveTo(r, 0); ctx.lineTo(size-r, 0);
+    ctx.quadraticCurveTo(size, 0, size, r);
+    ctx.lineTo(size, size-r);
+    ctx.quadraticCurveTo(size, size, size-r, size);
+    ctx.lineTo(r, size);
+    ctx.quadraticCurveTo(0, size, 0, size-r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.fill();
+  }
+
+  // Wrench
+  draw(ctx, wrench_outline, dark?'#2a2a3e':'#4a4a5e', s, 0, 0);
+  draw(ctx, wrench_body, dark?'#B8C0C8':'#8890A0', s, 0, 0);
+  draw(ctx, wrench_hi, dark?'#D0D8E0':'#9CA4B4', s, 0, 0);
+
+  // Lobster (offset 1,5)
+  const ox=1, oy=5;
+  draw(ctx, hat_outline, '#8B6914', s, ox, oy);
+  draw(ctx, hat_gold, '#FFD700', s, ox, oy);
+  draw(ctx, hat_hi, '#FFE44D', s, ox, oy);
+  draw(ctx, lobster_outline, '#3a0a0d', s, ox, oy);
+  draw(ctx, lobster_body, '#ff4f40', s, ox, oy);
+  draw(ctx, claws, '#ff775f', s, ox, oy);
+  draw(ctx, eyes_dark, '#081016', s, ox, oy);
+  draw(ctx, eyes_light, '#f5fbff', s, ox, oy);
+}
+
+// Dark 512px
+const cD = document.getElementById('dark');
+drawLogo(cD.getContext('2d'), 512, 'gradient', true);
+document.getElementById('dl-dark').href = cD.toDataURL('image/png');
+
+// Light 512px
+const cL = document.getElementById('light');
+drawLogo(cL.getContext('2d'), 512, '#f0f0f5', false);
+document.getElementById('dl-light').href = cL.toDataURL('image/png');
+
+// Transparent 512px
+const cT = document.getElementById('trans');
+drawLogo(cT.getContext('2d'), 512, null, true);
+document.getElementById('dl-trans').href = cT.toDataURL('image/png');
+
+// Tiny 32px preview
+const cTiny = document.getElementById('tiny');
+drawLogo(cTiny.getContext('2d'), 32, 'gradient', true);
+</script>
+</body>
+</html>
