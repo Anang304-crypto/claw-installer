@@ -1,72 +1,67 @@
 # ClawInstaller v0.1.1-beta
 
-> macOS-native setup wizard for OpenClaw — with built-in AI assistant
+> macOS 原生 OpenClaw 安裝精靈 — 內建 AI 助手
 
-## What's New
+## 更新內容
 
-First public beta of ClawInstaller. Install OpenClaw, configure channels, and get AI-powered troubleshooting — all in one native app.
+ClawInstaller 首次公開測試版。一個 App 搞定 OpenClaw 安裝、頻道設定、AI 除錯。
 
-### Modules
+### 功能模組
 
-| Module | Status | Description |
-|--------|--------|-------------|
-| Preflight Check | Complete | Auto-detects Node.js, arch, package managers. Fix buttons for common issues. |
-| Install Wizard | Complete | One-click install with real-time progress, error detection, auto-fix. |
-| Channel Setup | Complete | Step-by-step guides for Telegram, Discord, WhatsApp. |
-| LLM Setup | Complete | Choose AI provider (Anthropic, Google, Ollama) with key validation. |
-| AI Support | Complete | Chat with pre-tuned AI assistant. Context-aware, Traditional Chinese. |
-| Health Monitor | Preview | Gateway status display. Full controls coming soon. |
+| 模組 | 狀態 | 說明 |
+|------|------|------|
+| 環境檢測 | ✅ 完成 | 自動偵測 Node.js、系統架構、套件管理器，一鍵修復常見問題 |
+| 安裝精靈 | ✅ 完成 | 一鍵安裝 OpenClaw，即時進度顯示、錯誤偵測、自動修復 |
+| 頻道設定 | ✅ 完成 | Telegram、Discord、WhatsApp 逐步設定指引 |
+| LLM 設定 | ✅ 完成 | 選擇 AI 供應商（Anthropic、Google、Ollama），自動驗證 API Key |
+| AI 助手 | ✅ 完成 | 內建繁中 AI 助手，自動帶入系統狀態，即問即答 |
+| 健康監控 | 🔜 預覽 | Gateway 狀態顯示，完整控制即將推出 |
 
-### Key Features
+### 亮點功能
 
-- **Smart Error Guidance** — When things fail, tap "Ask AI Assistant" to get help with full system context
-- **Fresh Mac Support** — Guides users through Node.js installation even on brand new Macs
-- **Zero Config AI** — Built-in AI assistant works immediately, no API key needed
-- **Dynamic PATH Detection** — Supports nvm, fnm, volta, asdf, Homebrew (Apple Silicon + Intel)
+- **智慧錯誤導引** — 遇到問題時，點「問 AI 助手」自動帶入完整系統資訊
+- **全新 Mac 支援** — 即使是剛開箱的 Mac 也能引導安裝 Node.js
+- **免設定 AI** — 內建 AI 助手開箱即用，不需要 API Key
+- **動態 PATH 偵測** — 支援 nvm、fnm、volta、asdf、Homebrew（Apple Silicon + Intel）
 
-## Installation
+## 安裝方式
 
-### Direct Download
+### 直接下載
 
-1. Download `ClawInstaller-0.1.1-beta-macos.dmg` below
-2. Open DMG, drag ClawInstaller to Applications
-3. Right-click > Open (first time only, to bypass Gatekeeper)
-4. If you see "ClawInstaller is damaged", run this in Terminal:
+1. 下載下方的 `ClawInstaller-0.1.1-beta-macos.dmg`
+2. 打開 DMG，將 ClawInstaller 拖入「應用程式」資料夾
+3. 首次開啟：右鍵 → 打開（繞過 macOS 安全提示）
+4. 如果看到「ClawInstaller 已損壞」，請在終端機執行：
    ```bash
    xattr -cr /Applications/ClawInstaller.app
    ```
-   Then open the app normally.
+   然後正常開啟即可。
 
-### Homebrew
+> 💡 正式版將加入 Apple 公證簽名，屆時雙擊就能直接開啟。
 
-```bash
-brew tap clawinstaller/tap
-brew install --cask claw-installer
-```
+## 系統需求
 
-## System Requirements
+- macOS 14.0（Sonoma）或更新版本
+- Apple Silicon 或 Intel Mac
+- 約 100MB 磁碟空間
 
-- macOS 14.0 (Sonoma) or later
-- Apple Silicon or Intel Mac
-- ~100MB disk space
+## 快速開始
 
-## Quick Start
+1. **環境檢測** — 確認你的系統已就緒
+2. **安裝 OpenClaw** — 一鍵完成安裝
+3. **設定頻道** — 連接 Telegram、Discord 或 WhatsApp
+4. **設定 LLM** — 選擇你的 AI 供應商
+5. **問 AI** — 遇到問題隨時開啟 AI 助手
 
-1. **Preflight Check** — Verify your system is ready
-2. **Install OpenClaw** — One-click installation
-3. **Configure Channels** — Set up Telegram, Discord, or WhatsApp
-4. **Set Up LLM** — Choose your AI provider
-5. **Ask AI** — Get help anytime via the AI Support tab
+## 已知問題
 
-## Known Issues
+- 目前尚未加入 Apple 公證簽名，首次開啟需手動允許（詳見上方安裝說明）
+- 健康監控為預覽版，完整功能將於下個版本推出
+- WhatsApp QR 掃描需要 Gateway 先啟動
 
-- App is not notarized — macOS may show "damaged" warning on first launch. See installation steps above for the fix.
-- Health Monitor is preview only (full controls in next release)
-- WhatsApp QR scanning requires Gateway to be running
+## 回饋與社群
 
-## Feedback
+發現 Bug？[開 Issue 回報](https://github.com/clawinstaller/claw-installer/issues/new)
 
-Found a bug? [Open an issue](https://github.com/clawinstaller/claw-installer/issues/new)
-
-Telegram Group: [ClawInstaller Community](https://t.me/clawinstaller)
-Threads: [@0xhoward_peng](https://www.threads.com/@0xhoward_peng)
+Telegram 社群：[ClawInstaller Community](https://t.me/clawinstaller)
+Threads：[@0xhoward_peng](https://www.threads.com/@0xhoward_peng)
