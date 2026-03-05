@@ -14,6 +14,9 @@ let package = Package(
             path: "Sources/ClawInstaller",
             resources: [
                 .process("Resources")
+            ],
+            swiftSettings: [
+                .swiftLanguageMode(.v5),
             ]
         ),
     ]
