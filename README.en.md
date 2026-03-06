@@ -1,38 +1,52 @@
-# ClawInstaller
+<h1 align="center">ClawInstaller</h1>
 
-> Community-driven macOS setup wizard for [OpenClaw](https://github.com/openclaw/openclaw) — from 30 min CLI setup to 3 min visual wizard.
+<p align="center">
+  <strong>Install OpenClaw in 3 minutes instead of 30.</strong><br>
+  A native macOS GUI wizard that automates the painful setup process.
+</p>
 
-[![Swift 6.0](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
-[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue.svg)](https://www.apple.com/macos)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/clawinstaller/claw-installer/releases"><img src="https://img.shields.io/github/v/release/clawinstaller/claw-installer?include_prereleases&label=Download&color=FF8400" alt="Download"></a>
+  <a href="https://github.com/clawinstaller/claw-installer/stargazers"><img src="https://img.shields.io/github/stars/clawinstaller/claw-installer?style=flat&color=FFB800" alt="Stars"></a>
+  <a href="https://github.com/clawinstaller/claw-installer/releases"><img src="https://img.shields.io/github/downloads/clawinstaller/claw-installer/total?color=green" alt="Downloads"></a>
+  <a href="https://swift.org"><img src="https://img.shields.io/badge/Swift-6.0-orange.svg" alt="Swift 6.0"></a>
+  <a href="https://www.apple.com/macos"><img src="https://img.shields.io/badge/macOS-14%2B-blue.svg" alt="macOS 14+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
+</p>
 
-**Independent community project, built for the OpenClaw ecosystem.**
-
-[繁體中文](README.zh-TW.md)
+<p align="center">
+  <a href="README.md">繁體中文</a> ·
+  <a href="https://clawinstaller.github.io/website/en/">Documentation</a> ·
+  <a href="https://t.me/clawinstaller">Telegram</a> ·
+  <a href="https://www.threads.net/@0xhoward_peng">Threads</a>
+</p>
 
 ---
 
-## Why
+<!-- TODO: Replace with actual demo GIF once recorded -->
+<p align="center">
+  <img src="docs/showcase.png" alt="ClawInstaller" width="800">
+</p>
 
-OpenClaw has 257K+ stars but a steep setup curve. Analyzing [GitHub issues](https://github.com/openclaw/openclaw/issues):
+## The Problem
 
-- ~35% of new user issues = wrong Node version, missing native deps (Sharp, CMake)
-- ~25% = config file confusion (JSON syntax, channel setup)
-- ~15% = "it installed but won't start" (daemon, port conflicts)
+[OpenClaw](https://github.com/openclaw/openclaw) has **257K+ stars** and 3.1K open issues. A large chunk are installation problems:
 
-ClawInstaller automates the painful first 5 minutes — the part where most people give up.
+| Pain Point | % of new user issues | ClawInstaller fix |
+|-----------|---------------------|-------------------|
+| Wrong Node.js version, missing native deps | ~35% | Auto-detect + one-click fix |
+| Config file confusion (JSON, API keys) | ~25% | Step-by-step guided wizard |
+| "It installed but won't start" | ~15% | Smart error diagnosis + fix |
 
-## Features
+**We automate the painful first 5 minutes** — the stage where most people give up.
 
-| Module | Status | What it does |
-|--------|--------|-------------|
-| **Preflight Check** | Done | Detects Node.js >=22, package managers, arch, disk. One-click fix. |
-| **Install Wizard** | WIP | One-click install via npm/pnpm/bun with live progress |
-| **Channel Setup** | Done | Guided wizards for Telegram, Discord, WhatsApp |
-| **Health Monitor** | Planned | Gateway status, daemon start/stop, log viewer |
-| **AI Support** | Planned | Claude-powered setup Q&A (BYOK — bring your own key) |
+## Download
 
-## Quick Start
+### Direct Download (Recommended)
+
+> **[Download .dmg from GitHub Releases](https://github.com/clawinstaller/claw-installer/releases)**
+
+### Build from Source
 
 ```bash
 git clone https://github.com/clawinstaller/claw-installer.git
@@ -41,93 +55,57 @@ swift build
 swift run ClawInstaller
 ```
 
-**Requirements:** macOS 14+ (Sonoma), Xcode 15+ or Swift 6.0 toolchain
+Requires macOS 14+ (Sonoma), Xcode 15+ or Swift 6.0 toolchain.
 
-## How it works
+## Features
+
+| Module | Status | Description |
+|--------|--------|-------------|
+| **Environment Check** | Done | Node.js >=22, package managers, CPU arch, disk space. One-click fix. |
+| **One-Click Install** | Done | Install via npm/pnpm/bun with real-time terminal output |
+| **LLM Setup** | Done | Anthropic (OAuth + API key), Google Gemini, Ollama. Detects existing config. |
+| **Channel Setup** | Done | Telegram, Discord, WhatsApp — step-by-step with token validation |
+| **Skills Install** | Done | Select and install OpenClaw skills with one click |
+| **Done + Share** | Done | Installation summary, QR code sharing to Threads/X |
+| **Health Monitor** | Planned | Gateway status, daemon controls, log viewer |
+| **AI Assistant** | Planned | AI-powered troubleshooting with full install context |
+
+## How It Works
 
 ```
-1. Preflight ──> detect Node, npm/pnpm/bun, architecture, disk
-                  found issues? one-click fix suggestions
-                          |
-2. Install ───> pick best package manager, run install, verify
-                          |
-3. Channels ──> step-by-step Telegram/Discord/WhatsApp setup
-                          |
-4. Monitor ───> gateway health check, daemon controls
-                          |
-5. AI Support ─> Claude Q&A with full install context (premium)
+Welcome -> Preflight -> Install -> LLM Setup -> Channels -> Skills -> Done!
+              |                                                         |
+         Found issues?                                          Scan QR Code
+         One-click fix                                        Share to Threads
 ```
+
+## Smart Error Handling
+
+| Error | Auto-Fix |
+|-------|----------|
+| Node.js missing | One-click install via Homebrew |
+| Native module build failure | One-click Xcode CLI Tools install |
+| Network timeout | Retry / switch registry mirror |
+| `openclaw` command not found | PATH auto-detection + fix |
+| Existing LLM config detected | Shows current config, option to skip or reconfigure |
 
 ## Pricing
 
-| Tier | What you get | Cost |
-|------|-------------|------|
-| **Free** | Preflight + Install + Channels + Monitor | $0 |
-| **AI Support** | Claude-powered setup assistant | BYOK (your own API key) |
+**Completely free.** No hidden costs, no premium tier.
 
-## MCP Integration
+## Community
 
-Includes a TypeScript MCP server for tracking OpenClaw GitHub issues:
-
-```bash
-cd mcp && npm install && npm run build
-```
-
-4 tools: `issues_search`, `issues_analyze`, `issues_read`, `issues_report`
-
-Used for data-driven feature prioritization — analyzing which installation pain points to fix first.
-
-## Project Structure
-
-```
-claw-installer/
-├── Package.swift                     # Swift Package Manager
-├── Sources/ClawInstaller/
-│   ├── ClawInstaller.swift           # App entry + NavigationSplitView
-│   ├── AppState.swift                # Shared state
-│   ├── ShellRunner.swift             # Shell command execution
-│   ├── PreflightChecker.swift        # Module 1: system checks
-│   ├── PreflightView.swift           # Module 1: UI
-│   ├── PlaceholderViews.swift        # Module 4/5 placeholders
-│   ├── Views/
-│   │   ├── InstallWizardView.swift   # Module 2
-│   │   ├── ChannelSetupView.swift    # Module 3
-│   │   ├── TelegramSetupView.swift
-│   │   ├── DiscordSetupView.swift
-│   │   └── WhatsAppSetupView.swift
-│   ├── Models/
-│   │   └── ConfigManager.swift       # ~/.openclaw/openclaw.json
-│   └── Services/
-│       ├── ClaudeService.swift       # AI support (Module 5)
-│       └── KnowledgeBase.swift       # Docs + issue context
-├── mcp/                              # GitHub Issues Tracker MCP
-│   └── src/
-│       ├── index.ts                  # MCP server + 4 tools
-│       ├── gh-runner.ts              # gh CLI bridge
-│       ├── categorizer.ts            # Issue classifier
-│       └── cache.ts                  # JSONL complaint store
-└── docs/community-posts/             # PMF validation drafts
-```
-
-## Roadmap
-
-- [x] Module 1: Preflight Check
-- [x] Module 3: Channel Setup (Telegram, Discord, WhatsApp)
-- [x] MCP: GitHub Issues Tracker
-- [ ] Module 2: Install Wizard (in progress)
-- [ ] Module 4: Health Monitor
-- [ ] Module 5: AI Support (BYOK)
-- [ ] Homebrew Cask formula
-- [ ] Demo GIF / video
-- [ ] Pain Point Report from issue data
+- **Docs**: [clawinstaller.github.io/website/en](https://clawinstaller.github.io/website/en/) (English + 繁中)
+- **Threads**: [@0xhoward_peng](https://www.threads.net/@0xhoward_peng)
+- **Telegram**: [@clawinstaller](https://t.me/clawinstaller)
 
 ## Contributing
 
 Early stage — all contributions welcome:
 
-1. **Test it** on your Mac, report issues
+1. **Test it** on your Mac, [report issues](https://github.com/clawinstaller/claw-installer/issues)
 2. **Share pain points** about OpenClaw setup
-3. **PRs welcome** — see [open issues](https://github.com/clawinstaller/claw-installer/issues)
+3. **PRs welcome** — check open issues
 
 ## License
 
@@ -135,4 +113,7 @@ Early stage — all contributions welcome:
 
 ---
 
-Built by [@howardpen9](https://github.com/howardpen9) with help from OpenClaw agents (Friday, Shuri, Muse).
+<p align="center">
+  Built by <a href="https://github.com/howardpen9">@howardpen9</a> with OpenClaw agents (Friday, Shuri, Muse)<br>
+  <sub>Independent community project, not affiliated with OpenClaw.</sub>
+</p>
