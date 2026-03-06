@@ -21,9 +21,9 @@ enum ChannelCategory: String, CaseIterable {
 // MARK: - Channel Type
 
 enum ChannelType: String, CaseIterable, Identifiable {
-    // Instant Messaging
-    case line
+    // Instant Messaging (Telegram first — simpler onboarding)
     case telegram
+    case line
     case discord
     case whatsapp
     // Work Collaboration
@@ -54,10 +54,14 @@ enum ChannelType: String, CaseIterable, Identifiable {
         }
     }
 
+    var isSoon: Bool {
+        self == .line
+    }
+
     var subtitle: String {
         switch self {
-        case .line: return "台灣最普及"
-        case .telegram: return "Bot API"
+        case .telegram: return "推薦 · 3 步完成 · 免費"
+        case .line: return "台灣最普及 · 設定較複雜"
         case .discord: return "社群伺服器"
         case .whatsapp: return "個人帳號連結"
         case .slack: return "團隊協作"
@@ -131,7 +135,7 @@ enum DMPolicy: String, CaseIterable {
         switch self {
         case .pairing: return "使用者必須先輸入配對碼才能與 Agent 對話。安全且簡單，推薦使用。"
         case .allowlist: return "只有白名單上的使用者 ID 才能傳訊給 Agent。需手動管理名單。"
-        case .open: return "任何人都可以直接傳訊給 Agent。適合公開服務，但需注意安全風險。"
+        case .open: return "任何人都可以直接傳訊給 Agent。存在嚴重安全風險，強烈不建議使用。"
         }
     }
 }
@@ -141,12 +145,12 @@ enum DMPolicy: String, CaseIterable {
 struct ChannelSetupView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var configManager = ConfigManager.shared
-    @State private var selectedChannels: Set<ChannelType> = [.line]
+    @State private var selectedChannels: Set<ChannelType> = [.telegram]
     @State private var currentStep: SetupStep = .selection
     @State private var currentChannelIndex: Int = 0
     @State private var channelToggles: [ChannelType: Bool] = [
-        .line: true,        // Default enabled for Taiwan market
-        .telegram: true,
+        .telegram: true,    // Default — simplest onboarding (3 steps, free)
+        .line: false,       // Popular in TW but complex (5 steps, 2 sites)
         .discord: false,
         .whatsapp: false,
         .slack: false,
@@ -161,9 +165,8 @@ struct ChannelSetupView: View {
     }
 
     var channelsToSetup: [ChannelType] {
-        Array(selectedChannels)
-            .filter { $0.requiresConfig }
-            .sorted { $0.rawValue < $1.rawValue }
+        let order: [ChannelType] = [.telegram, .line, .discord, .whatsapp, .slack, .teams]
+        return order.filter { selectedChannels.contains($0) && $0.requiresConfig }
     }
 
     var body: some View {
@@ -225,6 +228,9 @@ struct ChannelSetupView: View {
             // Scrollable content
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    // Quick start tip
+                    quickStartTip
+
                     // IM Category
                     channelCategorySection(.im)
 
@@ -389,9 +395,31 @@ struct ChannelSetupView: View {
 
             // Text
             VStack(alignment: .leading, spacing: 1) {
-                Text(channel.displayName)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.primary)
+                HStack(spacing: 6) {
+                    Text(channel.displayName)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.primary)
+
+                    if channel == .telegram {
+                        Text("推薦")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(channel.color)
+                            .clipShape(Capsule())
+                    }
+
+                    if channel.isSoon {
+                        Text("Soon")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.secondary.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                }
 
                 Text(channel.subtitle)
                     .font(.system(size: 10))
@@ -402,19 +430,25 @@ struct ChannelSetupView: View {
             Spacer()
 
             // Toggle
-            Toggle("", isOn: Binding(
-                get: { channelToggles[channel] ?? false },
-                set: { newValue in
-                    channelToggles[channel] = newValue
-                    if newValue {
-                        selectedChannels.insert(channel)
-                    } else {
-                        selectedChannels.remove(channel)
+            if channel.isSoon {
+                Text("Soon")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { channelToggles[channel] ?? false },
+                    set: { newValue in
+                        channelToggles[channel] = newValue
+                        if newValue {
+                            selectedChannels.insert(channel)
+                        } else {
+                            selectedChannels.remove(channel)
+                        }
                     }
-                }
-            ))
-            .toggleStyle(ChannelToggleStyle(brandColor: channel.color))
-            .labelsHidden()
+                ))
+                .toggleStyle(ChannelToggleStyle(brandColor: channel.color))
+                .labelsHidden()
+            }
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
@@ -426,6 +460,36 @@ struct ChannelSetupView: View {
                     isOn ? channel.color.opacity(0.4) : Color(nsColor: .separatorColor),
                     lineWidth: 1
                 )
+        )
+    }
+
+    // MARK: - Quick Start Tip
+
+    private var quickStartTip: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "pawprint.fill")
+                .font(.system(size: 16))
+                .foregroundStyle(.orange)
+                .frame(width: 28, height: 28)
+                .background(Color.orange.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("建議先設定 **Telegram**，2 分鐘即可完成")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.primary)
+                Text("之後隨時可在設定中加入 LINE 或其他頻道")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(12)
+        .background(Color(red: 1.0, green: 0.973, blue: 0.941))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(red: 1.0, green: 0.878, blue: 0.698), lineWidth: 1)
         )
     }
 
@@ -479,6 +543,16 @@ struct ChannelSetupView: View {
                 }
                 .foregroundStyle(.orange)
             }
+
+            if selectedDMPolicy == .open {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 9))
+                    Text("危險 — 此選項永不建議開放")
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(.red)
+            }
         }
         .padding(16)
         .background(Color(nsColor: .controlBackgroundColor))
@@ -493,21 +567,62 @@ struct ChannelSetupView: View {
 
     @ViewBuilder
     private func channelConfigView(for channel: ChannelType) -> some View {
-        switch channel {
-        case .line:
-            LineSetupView(onComplete: advanceToNextChannel)
-        case .telegram:
-            TelegramSetupView(onComplete: advanceToNextChannel)
-        case .discord:
-            DiscordSetupView(onComplete: advanceToNextChannel)
-        case .whatsapp:
-            WhatsAppSetupView(onComplete: advanceToNextChannel)
-        case .slack:
-            SlackSetupView(onComplete: advanceToNextChannel)
-        case .teams:
-            TeamsSetupView(onComplete: advanceToNextChannel)
-        case .webchat:
-            EmptyView() // No config needed
+        VStack(spacing: 0) {
+            // Back / skip row
+            HStack {
+                Button {
+                    goBackFromConfig()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("返回")
+                    }
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Button {
+                    advanceToNextChannel()
+                } label: {
+                    Text("略過此頻道")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+
+            // Actual channel config
+            Group {
+                switch channel {
+                case .line:
+                    LineSetupView(onComplete: advanceToNextChannel)
+                case .telegram:
+                    TelegramSetupView(onComplete: advanceToNextChannel)
+                case .discord:
+                    DiscordSetupView(onComplete: advanceToNextChannel)
+                case .whatsapp:
+                    WhatsAppSetupView(onComplete: advanceToNextChannel)
+                case .slack:
+                    SlackSetupView(onComplete: advanceToNextChannel)
+                case .teams:
+                    TeamsSetupView(onComplete: advanceToNextChannel)
+                case .webchat:
+                    EmptyView()
+                }
+            }
+        }
+    }
+
+    private func goBackFromConfig() {
+        if currentChannelIndex > 0 {
+            currentChannelIndex -= 1
+        } else {
+            currentStep = .selection
         }
     }
 
