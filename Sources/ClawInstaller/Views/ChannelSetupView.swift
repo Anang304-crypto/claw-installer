@@ -575,7 +575,7 @@ struct ChannelSetupView: View {
                 Button {
                     advanceToNextChannel()
                 } label: {
-                    Text("略過此頻道")
+                    Text("略過此步驟")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }

@@ -30,7 +30,7 @@ struct TelegramSetupView: View {
         ),
         SetupStep(
             title: "複製 Bot Token",
-            description: "BotFather 會給你一組 Token，格式如下：\n\n123456789:ABCdefGHIjklMNOpqrsTUVwxyz\n\n複製後貼到下方欄位：",
+            description: "BotFather 會給你一組 Token（如 123456789:ABCdef...），複製後貼到下方欄位。",
             action: nil,
             link: nil
         )
@@ -43,7 +43,7 @@ struct TelegramSetupView: View {
 
             // Step content
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 14) {
                     if currentStep < steps.count {
                         stepView(steps[currentStep])
                     }
@@ -134,6 +134,26 @@ struct TelegramSetupView: View {
                     mockChatBubble(isBot: false, text: "My OpenClaw")
                     mockChatBubble(isBot: true, text: "很好。現在請選擇一個使用者名稱...")
                 }
+            case 2:
+                // BotFather guide screenshot (phone, already has red circle)
+                if let url = Bundle.module.url(forResource: "botfather_guide", withExtension: "jpg"),
+                   let nsImage = NSImage(contentsOf: url) {
+                    VStack(spacing: 6) {
+                        Image(nsImage: nsImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 180)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                            )
+
+                        Text("複製紅圈內的 Token 貼到下方")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
             default:
                 EmptyView()
             }
@@ -167,10 +187,24 @@ struct TelegramSetupView: View {
             Text("Bot Token")
                 .font(.headline)
 
-            HStack {
-                SecureField("貼上你的 Bot Token", text: $botToken)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(.body, design: .monospaced))
+            HStack(spacing: 8) {
+                ZStack(alignment: .leading) {
+                    if botToken.isEmpty {
+                        Text("貼上你的 Bot Token")
+                            .font(.system(size: 13, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                    }
+                    TextField("", text: $botToken)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13, design: .monospaced))
+                }
+                .padding(10)
+                .background(Color(nsColor: .textBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                )
 
                 Button("驗證") {
                     validateToken()

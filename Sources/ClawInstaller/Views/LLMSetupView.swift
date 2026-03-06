@@ -1,5 +1,5 @@
-// LLMSetupView — AI Provider Selection (Screen 5, V3 Tiered Design)
-// 12 providers across 4 tiers with compact/full card layouts
+// LLMSetupView — AI Provider Setup (matches OpenClaw two-layer onboard flow)
+// Flow: selectProvider → selectAuth → enterSecret → selectModel → validating → complete
 
 import SwiftUI
 
@@ -10,17 +10,16 @@ struct LLMSetupView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Content based on current step
             Group {
                 switch viewModel.currentStep {
                 case .selectProvider:
                     providerSelectionView
-                case .setupGuide:
-                    setupGuideView
-                case .enterKey:
-                    enterKeyView
-                case .ollamaDetection:
-                    ollamaDetectionView
+                case .selectAuth:
+                    authSelectionView
+                case .enterSecret:
+                    enterSecretView
+                case .selectModel:
+                    modelSelectionView
                 case .validating:
                     validatingView
                 case .complete:
@@ -28,8 +27,8 @@ struct LLMSetupView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(nsColor: .windowBackgroundColor))
 
-            // Footer navigation (only for non-selection steps)
             if viewModel.currentStep != .selectProvider {
                 Divider()
                 footerView
@@ -37,7 +36,7 @@ struct LLMSetupView: View {
         }
     }
 
-    // MARK: - Provider Selection (V3 Tiered Design)
+    // MARK: - Provider Selection
 
     private var providerSelectionView: some View {
         VStack(spacing: 0) {
@@ -62,13 +61,13 @@ struct LLMSetupView: View {
             .padding(.horizontal, 40)
             .padding(.top, 24)
 
-            // Fixed header area
+            // Header
             VStack(alignment: .leading, spacing: 6) {
                 Text("選擇你的 AI 供應商")
                     .font(.system(size: 20, weight: .bold, design: .monospaced))
                     .foregroundStyle(.primary)
 
-                Text("OpenClaw 需要大型語言模型來驅動你的 Agent")
+                Text("OpenClaw 支援多個 Provider，選一個開始吧")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
             }
@@ -77,53 +76,31 @@ struct LLMSetupView: View {
             .padding(.bottom, 12)
             .padding(.horizontal, 40)
 
-            // Scrollable provider list
+            // Provider list
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 16) {
 
-                    // --- Tier 1: Mainstream (full cards) ---
+                    // Tier 1: Mainstream
                     tierHeader(.mainstream)
                     VStack(spacing: 8) {
                         ForEach(LLMProvider.providers(for: .mainstream)) { provider in
-                            fullProviderCard(provider)
+                            providerCard(provider)
                         }
                     }
 
-                    // --- Tier 2: Multi-model (full cards) ---
-                    tierHeader(.multiModel)
-                    VStack(spacing: 8) {
-                        ForEach(LLMProvider.providers(for: .multiModel)) { provider in
-                            fullProviderCard(provider)
-                        }
-                    }
-
-                    // --- Tier 3: Asia (compact grid) ---
+                    // Tier 2: Asia
                     tierHeader(.asia)
                     asiaInfoTip
-                    LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4),
-                        spacing: 8
-                    ) {
+                    VStack(spacing: 8) {
                         ForEach(LLMProvider.providers(for: .asia)) { provider in
-                            compactProviderCard(provider)
+                            providerCard(provider)
                         }
                     }
 
-                    // --- Tier 4: Local (2-column row) ---
-                    tierHeader(.local)
-                    HStack(spacing: 8) {
-                        ForEach(LLMProvider.providers(for: .local)) { provider in
-                            compactProviderCard(provider)
-                        }
-                    }
-
-                    // "More providers" placeholder
-                    moreProvidersButton
-
-                    // Mascot tip section
+                    // Mascot tip
                     mascotTipView
 
-                    // Skip text
+                    // Skip
                     Button {
                         appState.trackEvent("llm_setup_skip", module: "llm")
                         onComplete?()
@@ -140,9 +117,6 @@ struct LLMSetupView: View {
                 .padding(.bottom, 20)
             }
         }
-        .onAppear {
-            viewModel.checkOllamaInstalled()
-        }
     }
 
     // MARK: - Tier Header
@@ -158,15 +132,13 @@ struct LLMSetupView: View {
         .padding(.top, 4)
     }
 
-    // MARK: - Full Provider Card (Tier 1 & 2)
+    // MARK: - Provider Card
 
-    private func fullProviderCard(_ provider: LLMProvider) -> some View {
+    private func providerCard(_ provider: LLMProvider) -> some View {
         Button {
-            viewModel.selectedProvider = provider
-            viewModel.proceedFromSelection()
+            viewModel.selectProvider(provider)
         } label: {
             HStack(spacing: 12) {
-                // Icon
                 Image(systemName: provider.iconName)
                     .font(.system(size: 18))
                     .foregroundStyle(provider.color)
@@ -174,7 +146,6 @@ struct LLMSetupView: View {
                     .background(provider.color.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                // Text group
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(provider.displayName)
@@ -193,7 +164,6 @@ struct LLMSetupView: View {
 
                 Spacer()
 
-                // Badge or arrow
                 if let badge = provider.badgeText {
                     Text(badge)
                         .font(.system(size: 10, weight: .semibold))
@@ -203,7 +173,7 @@ struct LLMSetupView: View {
                         .background(provider.badgeColor)
                         .clipShape(Capsule())
                 } else {
-                    Text("設定 →")
+                    Text("設定 \u{2192}")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -218,54 +188,6 @@ struct LLMSetupView: View {
                         provider == .anthropic ? Color.orange : Color(nsColor: .separatorColor),
                         lineWidth: provider == .anthropic ? 2 : 1
                     )
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Compact Provider Card (Tier 3 & 4)
-
-    private func compactProviderCard(_ provider: LLMProvider) -> some View {
-        Button {
-            viewModel.selectedProvider = provider
-            viewModel.proceedFromSelection()
-        } label: {
-            VStack(spacing: 6) {
-                // Icon
-                Image(systemName: provider.iconName)
-                    .font(.system(size: 16))
-                    .foregroundStyle(provider.color)
-                    .frame(width: 32, height: 32)
-                    .background(provider.color.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                // Name
-                Text(provider.displayName)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-
-                // Subtitle / badge
-                if let badge = provider.badgeText {
-                    Text(badge)
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(provider.badgeColor)
-                } else {
-                    Text(provider.modelName)
-                        .font(.system(size: 9))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .padding(.horizontal, 6)
-            .background(Color(nsColor: .controlBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -288,30 +210,6 @@ struct LLMSetupView: View {
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
-    // MARK: - More Providers Button
-
-    private var moreProvidersButton: some View {
-        HStack {
-            Spacer()
-            Button {
-                // Future: expand to show more providers
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "plus.circle")
-                        .font(.system(size: 12))
-                    Text("更多供應商")
-                        .font(.system(size: 12))
-                }
-                .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(true)
-            .opacity(0.5)
-            Spacer()
-        }
-        .padding(.vertical, 4)
-    }
-
     // MARK: - Mascot Tip
 
     private var mascotTipView: some View {
@@ -323,347 +221,729 @@ struct LLMSetupView: View {
                 .background(Color.orange.opacity(0.15))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
-            Text("不確定選哪個？推薦 **Anthropic**，Agent 表現最好！想省錢可選 **DeepSeek** 或免費的 **Google AI**。")
+            Text("不確定選哪個？推薦 **Anthropic**，Agent 表現最好！想省錢可選免費的 **Google**。")
                 .font(.system(size: 11))
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
-        .background(Color(red: 1.0, green: 0.973, blue: 0.941)) // #FFF8F0
+        .background(Color(red: 1.0, green: 0.973, blue: 0.941))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color(red: 1.0, green: 0.878, blue: 0.698), lineWidth: 1) // #FFE0B2
+                .stroke(Color(red: 1.0, green: 0.878, blue: 0.698), lineWidth: 1)
         )
     }
 
-    // MARK: - Setup Guide (Step-by-step)
+    // MARK: - Auth Selection (Layer 2 — matches OpenClaw AUTH_CHOICE_GROUP_DEFS)
 
-    private var setupGuideView: some View {
+    private var authSelectionView: some View {
         VStack(spacing: 0) {
             if let provider = viewModel.selectedProvider {
-                // Progress indicator
-                HStack(spacing: 4) {
-                    ForEach(0..<provider.setupSteps.count, id: \.self) { index in
-                        Capsule()
-                            .fill(index <= viewModel.currentGuideStep ? provider.color : Color.secondary.opacity(0.2))
-                            .frame(height: 4)
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-
-                // Step content
-                if viewModel.currentGuideStep < provider.setupSteps.count {
-                    let step = provider.setupSteps[viewModel.currentGuideStep]
-
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 20) {
-                            // Step badge
-                            Text("步驟 \(viewModel.currentGuideStep + 1) / \(provider.setupSteps.count)")
-                                .font(.caption.bold())
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(Color.secondary.opacity(0.1))
-                                .clipShape(Capsule())
-
-                            // Title
-                            Text(step.title)
-                                .font(.system(size: 20, weight: .bold, design: .monospaced))
-
-                            // Description
-                            Text(step.description)
-                                .foregroundStyle(.secondary)
-
-                            // Action button
-                            if let action = step.action, let url = step.url {
-                                Link(destination: url) {
-                                    HStack {
-                                        Text(action)
-                                        Image(systemName: "arrow.up.right")
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .tint(provider.color)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Back to provider list
+                        Button {
+                            viewModel.currentStep = .selectProvider
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                Text("返回")
                             }
-
-                            // Visual hints
-                            setupHintView(for: provider, step: viewModel.currentGuideStep)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(24)
+                        .buttonStyle(.plain)
+
+                        // Provider header
+                        HStack(spacing: 12) {
+                            Image(systemName: provider.iconName)
+                                .font(.system(size: 22))
+                                .foregroundStyle(provider.color)
+                                .frame(width: 44, height: 44)
+                                .background(provider.color.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(provider.displayName)
+                                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                                Text("選擇驗證方式")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        // Auth choices
+                        VStack(spacing: 8) {
+                            ForEach(provider.authChoices) { choice in
+                                authChoiceCard(choice, provider: provider)
+                            }
+                        }
+
+                        // Setup steps for selected auth choice
+                        if let choice = viewModel.selectedAuthChoice {
+                            let steps = provider.setupSteps(for: choice)
+                            if !steps.isEmpty {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("設定步驟")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(.secondary)
+
+                                    ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
+                                        HStack(alignment: .top, spacing: 10) {
+                                            Text("\(index + 1)")
+                                                .font(.system(size: 11, weight: .bold))
+                                                .foregroundStyle(.white)
+                                                .frame(width: 20, height: 20)
+                                                .background(provider.color)
+                                                .clipShape(Circle())
+
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(step.title)
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                Text(step.description)
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.secondary)
+
+                                                if let action = step.action, let url = step.url {
+                                                    Link(destination: url) {
+                                                        HStack(spacing: 4) {
+                                                            Text(action)
+                                                            Image(systemName: "arrow.up.right")
+                                                        }
+                                                        .font(.system(size: 11, weight: .medium))
+                                                        .foregroundStyle(provider.color)
+                                                    }
+                                                    .padding(.top, 2)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding(14)
+                                .background(Color(nsColor: .controlBackgroundColor))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                        }
                     }
+                    .padding(24)
                 }
             }
         }
     }
 
-    @ViewBuilder
-    private func setupHintView(for provider: LLMProvider, step: Int) -> some View {
-        let isLastStep = step == provider.setupSteps.count - 1
+    private func authChoiceCard(_ choice: AuthChoice, provider: LLMProvider) -> some View {
+        let isSelected = viewModel.selectedAuthChoice?.id == choice.id
 
-        VStack(alignment: .leading, spacing: 8) {
-            // Key format hint for the last step of API-key providers
-            if provider.requiresAPIKey && isLastStep && !provider.keyPrefix.isEmpty {
-                Text("你的金鑰格式如下：")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                HStack {
-                    Text(provider.keyPrefix)
-                        .foregroundStyle(provider.color)
-                    + Text("xxxx...xxxx")
-                        .foregroundStyle(.secondary)
+        return Button {
+            viewModel.selectedAuthChoice = choice
+        } label: {
+            HStack(spacing: 12) {
+                // Radio indicator
+                ZStack {
+                    Circle()
+                        .stroke(isSelected ? provider.color : Color.secondary.opacity(0.3), lineWidth: 2)
+                        .frame(width: 18, height: 18)
+                    if isSelected {
+                        Circle()
+                            .fill(provider.color)
+                            .frame(width: 10, height: 10)
+                    }
                 }
-                .font(.system(size: 14, design: .monospaced))
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(nsColor: .textBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            // Ollama terminal command hint
-            else if provider == .ollama && step == 2 {
-                Text("在終端機執行：")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
 
-                HStack {
-                    Text("ollama pull llama3.2")
-                        .font(.system(size: 14, design: .monospaced))
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(choice.label)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.primary)
+
+                        if choice.isRecommended {
+                            Text("推薦")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(provider.color)
+                                .clipShape(Capsule())
+                        }
+                    }
+
+                    if let hint = choice.hint {
+                        Text(hint)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .background(isSelected ? provider.color.opacity(0.06) : Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(
+                        isSelected ? provider.color : Color(nsColor: .separatorColor),
+                        lineWidth: isSelected ? 2 : 1
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Enter Secret (API Key, Setup Token, or OAuth status)
+
+    private var enterSecretView: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                if let provider = viewModel.selectedProvider,
+                   let authChoice = viewModel.selectedAuthChoice {
+
+                    // OAuth flow — show status instead of input
+                    if authChoice.method == .deviceCode || authChoice.method == .oauth {
+                        oauthStatusView(provider: provider, authChoice: authChoice)
+                    } else {
+                        secretInputView(provider: provider, authChoice: authChoice)
+                    }
+                }
+            }
+            .padding(24)
+        }
+    }
+
+    private func oauthStatusView(provider: LLMProvider, authChoice: AuthChoice) -> some View {
+        VStack(spacing: 16) {
+            // Header
+            VStack(spacing: 6) {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.badge.key.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(provider.color)
+                    Text("OAuth 帳號授權")
+                        .font(.system(size: 18, weight: .bold, design: .monospaced))
+                }
+
+                Text(authChoice.hint ?? "使用帳號登入授權")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+
+            // Existing config detected banner
+            if viewModel.existingLLMDetected {
+                HStack(spacing: 8) {
+                    Image(systemName: "info.circle.fill")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.blue)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("已偵測到現有 AI 設定")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("目前設定：\(viewModel.existingLLMSummary)。重新設定將覆蓋現有配置。")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
 
                     Spacer()
 
-                    Button {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString("ollama pull llama3.2", forType: .string)
-                        viewModel.showCopiedFeedback = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            viewModel.showCopiedFeedback = false
-                        }
-                    } label: {
-                        Image(systemName: viewModel.showCopiedFeedback ? "checkmark" : "doc.on.doc")
-                            .foregroundStyle(viewModel.showCopiedFeedback ? .green : .secondary)
+                    Button("跳過") {
+                        viewModel.currentStep = .selectModel
                     }
-                    .buttonStyle(.borderless)
+                    .font(.system(size: 11, weight: .medium))
+                    .buttonStyle(.bordered)
                 }
                 .padding(12)
-                .background(Color(nsColor: .textBackgroundColor))
+                .background(Color.blue.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            // GitHub Copilot OAuth hint
-            else if provider == .githubCopilot && step == 1 {
-                Text("此供應商使用 GitHub OAuth 授權，設定完成後將自動連線。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(nsColor: .textBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            } else {
-                EmptyView()
+
+            // Result summary card (shown after completion)
+            if !viewModel.oauthRunning, viewModel.cliExitCode != nil {
+                resultSummaryCard(provider: provider)
             }
-        }
-        .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
 
-    // MARK: - Enter Key View
+            // Inline terminal output
+            VStack(alignment: .leading, spacing: 0) {
+                // Terminal title bar
+                HStack(spacing: 6) {
+                    Circle().fill(
+                        viewModel.cliExitCode != nil && !viewModel.cliSucceeded ? .red.opacity(0.8) :
+                        viewModel.cliSucceeded ? .green.opacity(0.8) : .secondary.opacity(0.4)
+                    ).frame(width: 10, height: 10)
+                    Circle().fill(
+                        viewModel.oauthRunning ? .yellow.opacity(0.8) : .secondary.opacity(0.4)
+                    ).frame(width: 10, height: 10)
+                    Circle().fill(
+                        viewModel.cliSucceeded ? .green.opacity(0.8) : .secondary.opacity(0.4)
+                    ).frame(width: 10, height: 10)
 
-    private var enterKeyView: some View {
-        VStack(spacing: 24) {
-            if let provider = viewModel.selectedProvider {
-                // Header
-                VStack(spacing: 8) {
-                    Image(systemName: "key.fill")
-                        .font(.system(size: 40))
-                        .foregroundStyle(provider.color)
+                    Spacer()
 
-                    Text("輸入你的 API 金鑰")
-                        .font(.system(size: 20, weight: .bold, design: .monospaced))
+                    // Status text in title bar
+                    if viewModel.oauthRunning {
+                        HStack(spacing: 4) {
+                            ProgressView()
+                                .scaleEffect(0.4)
+                                .frame(width: 10, height: 10)
+                            Text("執行中...")
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                    } else {
+                        Text("openclaw onboard")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
 
-                    Text("請貼上你的 \(provider.displayName) API 金鑰")
-                        .font(.system(size: 13))
+                    Spacer()
+
+                    // Copy command button
+                    Button {
+                        let cmd = viewModel.oauthCommand()
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(cmd, forType: .string)
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    .buttonStyle(.borderless)
+                    .help("複製指令")
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(red: 0.18, green: 0.18, blue: 0.20))
+
+                // Pinned command bar
+                HStack(spacing: 8) {
+                    Text(">_")
+                        .font(.custom("JetBrains Mono", size: 11).bold())
+                        .foregroundStyle(.green.opacity(0.9))
+                    Text(viewModel.oauthCommand())
+                        .font(.custom("JetBrains Mono", size: 12))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Spacer()
+                    if viewModel.cliSucceeded {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.green)
+                    } else if viewModel.cliExitCode != nil {
+                        Text("exit \(viewModel.cliExitCode!)")
+                            .font(.custom("JetBrains Mono", size: 10))
+                            .foregroundStyle(.red.opacity(0.8))
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(red: 0.13, green: 0.13, blue: 0.15))
+
+                // Terminal output area
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(Array(viewModel.parsedCLILines.enumerated()), id: \.offset) { index, parsed in
+                                Text(parsed.text)
+                                    .font(.custom("JetBrains Mono", size: 12))
+                                    .foregroundStyle(parsed.color)
+                                    .textSelection(.enabled)
+                                    .id(index)
+                            }
+
+                            if viewModel.oauthRunning {
+                                HStack(spacing: 4) {
+                                    Text("\u{258B}")
+                                        .font(.custom("JetBrains Mono", size: 12))
+                                        .foregroundStyle(.green)
+                                        .opacity(0.8)
+                                }
+                                .id("cursor")
+                            }
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(minHeight: 160, maxHeight: 220)
+                    .background(Color(red: 0.09, green: 0.09, blue: 0.11))
+                    .onChange(of: viewModel.cliOutputLines.count) {
+                        withAnimation(.easeOut(duration: 0.1)) {
+                            if viewModel.oauthRunning {
+                                proxy.scrollTo("cursor", anchor: .bottom)
+                            } else if let last = viewModel.parsedCLILines.indices.last {
+                                proxy.scrollTo(last, anchor: .bottom)
+                            }
+                        }
+                    }
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+
+            // Google Gemini CLI caution
+            if authChoice.id == "google-gemini-cli" {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.orange)
+                    Text("Google Gemini CLI OAuth 為非官方整合，部分用戶反映帳號有被限制的風險。")
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
+                .padding(10)
+                .background(Color.orange.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
 
-                // Key input
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        if viewModel.showKey {
-                            TextField("在此貼上你的 API 金鑰...", text: $viewModel.apiKey)
-                                .textFieldStyle(.plain)
-                                .font(.system(.body, design: .monospaced))
-                        } else {
-                            SecureField("在此貼上你的 API 金鑰...", text: $viewModel.apiKey)
-                                .textFieldStyle(.plain)
-                                .font(.system(.body, design: .monospaced))
-                        }
-
-                        Button {
-                            viewModel.showKey.toggle()
-                        } label: {
-                            Image(systemName: viewModel.showKey ? "eye.slash" : "eye")
-                                .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                    .padding(12)
-                    .background(Color(nsColor: .textBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                    // Validation feedback
-                    HStack(spacing: 6) {
-                        if viewModel.apiKey.isEmpty {
-                            if !provider.keyPrefix.isEmpty {
-                                Image(systemName: "info.circle")
-                                    .foregroundStyle(.secondary)
-                                Text("開頭為 \(provider.keyPrefix)...")
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                Image(systemName: "info.circle")
-                                    .foregroundStyle(.secondary)
-                                Text("請輸入你的 API 金鑰")
-                                    .foregroundStyle(.secondary)
-                            }
-                        } else if provider.validateKeyFormat(viewModel.apiKey) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                            Text("金鑰格式正確")
-                                .foregroundStyle(.green)
-                        } else {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.orange)
-                            if !provider.keyPrefix.isEmpty {
-                                Text("金鑰應以 \(provider.keyPrefix) 開頭")
-                                    .foregroundStyle(.orange)
-                            } else {
-                                Text("金鑰格式不正確")
-                                    .foregroundStyle(.orange)
-                            }
-                        }
-                    }
-                    .font(.caption)
-                }
-                .padding()
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                // Error message
-                if let error = viewModel.validationError {
-                    HStack(spacing: 8) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.red)
-                        Text(error)
-                    }
-                    .font(.caption)
-                    .padding(12)
-                    .background(Color.red.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-
-                // Help link
-                if let url = provider.apiKeyURL {
-                    Link(destination: url) {
+            // Action row
+            HStack(spacing: 12) {
+                if !viewModel.oauthRunning {
+                    Button {
+                        viewModel.runOAuthInline()
+                    } label: {
                         HStack(spacing: 4) {
-                            Image(systemName: "questionmark.circle")
-                            Text("哪裡取得 API 金鑰？")
+                            Image(systemName: "arrow.clockwise")
+                            Text(viewModel.cliExitCode == nil ? "啟動" : "重新執行")
                         }
-                        .font(.caption)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
                     }
+                    .buttonStyle(.plain)
+                }
+
+                Spacer()
+
+                Text("也可在終端機手動執行")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    /// Result summary card — shows clear success/failure after CLI completes
+    private func resultSummaryCard(provider: LLMProvider) -> some View {
+        HStack(spacing: 12) {
+            if viewModel.cliSucceeded {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(.green)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("授權設定成功")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.primary)
+                    Text("點擊「繼續」選擇模型")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(.red)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("執行失敗")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.primary)
+                    // Extract key error message
+                    Text(viewModel.cliErrorSummary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
             }
 
             Spacer()
         }
-        .padding(24)
+        .padding(14)
+        .background(viewModel.cliSucceeded ? Color.green.opacity(0.08) : Color.red.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(viewModel.cliSucceeded ? Color.green.opacity(0.2) : Color.red.opacity(0.2), lineWidth: 1)
+        )
     }
 
-    // MARK: - Ollama Detection View
-
-    private var ollamaDetectionView: some View {
-        VStack(spacing: 24) {
-            // Header
-            VStack(spacing: 8) {
-                Image(systemName: "desktopcomputer")
-                    .font(.system(size: 48))
-                    .foregroundStyle(.purple)
-
-                Text("檢查 Ollama 安裝狀態")
-                    .font(.system(size: 20, weight: .bold, design: .monospaced))
-            }
-
-            // Detection status
-            VStack(spacing: 16) {
-                if viewModel.isCheckingOllama {
-                    ProgressView()
-                        .scaleEffect(1.2)
-                    Text("偵測 Ollama 中...")
+    @ViewBuilder
+    private func secretInputView(provider: LLMProvider, authChoice: AuthChoice) -> some View {
+        // Existing config detected banner
+        if viewModel.existingLLMDetected {
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.blue)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("已偵測到現有 AI 設定")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("目前設定：\(viewModel.existingLLMSummary)。輸入新金鑰將覆蓋現有配置。")
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
-                } else if viewModel.ollamaInstalled {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 50))
-                        .foregroundStyle(.green)
-                    Text("Ollama 已安裝且正在執行！")
-                        .font(.headline)
+                }
+                Spacer()
+                Button("跳過") {
+                    viewModel.currentStep = .selectModel
+                }
+                .font(.system(size: 11, weight: .medium))
+                .buttonStyle(.bordered)
+            }
+            .padding(12)
+            .background(Color.blue.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
 
-                    if !viewModel.ollamaModels.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("可用模型：")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+        // Header
+        VStack(spacing: 8) {
+            Image(systemName: authChoice.method == .setupToken ? "ticket.fill" : "key.fill")
+                .font(.system(size: 40))
+                .foregroundStyle(provider.color)
 
-                            ForEach(viewModel.ollamaModels, id: \.self) { model in
-                                HStack {
-                                    Image(systemName: "cube.fill")
-                                        .foregroundStyle(.purple)
-                                    Text(model)
-                                        .font(.system(.body, design: .monospaced))
+            Text(authChoice.method == .setupToken ? "貼上 Setup Token" : "輸入 API 金鑰")
+                .font(.system(size: 20, weight: .bold, design: .monospaced))
+
+            if let hint = authChoice.hint {
+                Text(hint)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(.bottom, 4)
+
+                    // Secret input card
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(authChoice.method == .setupToken ? "Token" : "API 金鑰")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+
+                        // Use NSTextField-backed input for reliable paste support
+                        HStack(spacing: 8) {
+                            ZStack(alignment: .leading) {
+                                if viewModel.secretInput.isEmpty {
+                                    Text(authChoice.method == .setupToken ? "在此貼上 token..." : "在此貼上 API 金鑰...")
+                                        .font(.system(size: 13, design: .monospaced))
+                                        .foregroundStyle(.tertiary)
+                                }
+                                TextField("", text: $viewModel.secretInput)
+                                    .textFieldStyle(.plain)
+                                    .font(.system(size: 13, design: .monospaced))
+                            }
+
+                            Button {
+                                viewModel.showKey.toggle()
+                            } label: {
+                                Image(systemName: viewModel.showKey ? "eye.slash" : "eye")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                        .padding(12)
+                        .background(Color(nsColor: .textBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        )
+
+                        // Validation hint
+                        HStack(spacing: 6) {
+                            if viewModel.secretInput.isEmpty {
+                                if authChoice.method == .setupToken {
+                                    Image(systemName: "info.circle")
+                                        .foregroundStyle(.secondary)
+                                    Text("在終端機執行 claude setup-token 取得")
+                                        .foregroundStyle(.secondary)
+                                } else if !provider.keyPrefix.isEmpty {
+                                    Image(systemName: "info.circle")
+                                        .foregroundStyle(.secondary)
+                                    Text("開頭為 \(provider.keyPrefix)...")
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Image(systemName: "info.circle")
+                                        .foregroundStyle(.secondary)
+                                    Text("請輸入你的 API 金鑰")
+                                        .foregroundStyle(.secondary)
+                                }
+                            } else if provider.validateInput(viewModel.secretInput, authChoice: authChoice) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                Text(authChoice.method == .setupToken ? "Token 格式正確" : "金鑰格式正確")
+                                    .foregroundStyle(.green)
+                            } else {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundStyle(.orange)
+                                if authChoice.method == .apiKey && !provider.keyPrefix.isEmpty {
+                                    Text("金鑰應以 \(provider.keyPrefix) 開頭")
+                                        .foregroundStyle(.orange)
+                                } else {
+                                    Text("格式不正確")
+                                        .foregroundStyle(.orange)
                                 }
                             }
                         }
-                        .padding()
-                        .background(Color(nsColor: .controlBackgroundColor))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .font(.caption)
                     }
-                } else {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 50))
-                        .foregroundStyle(.red)
-                    Text("未偵測到 Ollama")
-                        .font(.headline)
+                    .padding(16)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                    )
 
-                    Text("請先安裝 Ollama 並執行模型。")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    // Error message
+                    if let error = viewModel.validationError {
+                        HStack(spacing: 8) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.red)
+                            Text(error)
+                        }
+                        .font(.caption)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.red.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
 
-                    Link(destination: URL(string: "https://ollama.com/download")!) {
-                        HStack {
-                            Text("下載 Ollama")
-                            Image(systemName: "arrow.up.right")
+                    // Help link
+                    if authChoice.method == .apiKey, let url = provider.apiKeyURL {
+                        Link(destination: url) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "questionmark.circle")
+                                Text("哪裡取得 API 金鑰？")
+                            }
+                            .font(.caption)
                         }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.purple)
+    }
 
-                    Button("重新檢查") {
-                        viewModel.checkOllamaInstalled()
+    // MARK: - Model Selection (matches OpenClaw model allowlist)
+
+    private var modelSelectionView: some View {
+        VStack(spacing: 0) {
+            if let provider = viewModel.selectedProvider {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Header
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("選擇模型")
+                                .font(.system(size: 20, weight: .bold, design: .monospaced))
+                            Text("選擇 \(provider.displayName) 的預設模型，稍後可在設定中更改")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        // Model options
+                        VStack(spacing: 8) {
+                            ForEach(provider.modelOptions) { model in
+                                modelOptionCard(model, provider: provider)
+                            }
+                        }
+
+                        // Failover toggle
+                        if let failover = provider.failoverModel {
+                            Button {
+                                viewModel.enableFailover.toggle()
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: viewModel.enableFailover ? "checkmark.square.fill" : "square")
+                                        .font(.system(size: 16))
+                                        .foregroundStyle(viewModel.enableFailover ? provider.color : .secondary)
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("設定備援模型（選填）")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundStyle(.primary)
+                                        Text("當主模型不可用時自動切換到 \(failover.displayName)（\(failover.hint ?? "")）")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Spacer()
+                                }
+                                .padding(12)
+                                .background(Color(nsColor: .controlBackgroundColor))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.bordered)
+                    .padding(24)
                 }
             }
-            .padding()
+        }
+    }
 
-            Spacer()
+    private func modelOptionCard(_ model: ModelOption, provider: LLMProvider) -> some View {
+        let isSelected = viewModel.selectedModel?.id == model.id
+
+        return Button {
+            viewModel.selectedModel = model
+        } label: {
+            HStack(spacing: 12) {
+                // Radio
+                ZStack {
+                    Circle()
+                        .stroke(isSelected ? provider.color : Color.secondary.opacity(0.3), lineWidth: 2)
+                        .frame(width: 18, height: 18)
+                    if isSelected {
+                        Circle()
+                            .fill(provider.color)
+                            .frame(width: 10, height: 10)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(model.displayName)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.primary)
+
+                        if model.isDefault {
+                            Text("預設")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(provider.color)
+                                .clipShape(Capsule())
+                        }
+                    }
+
+                    if let hint = model.hint {
+                        Text(hint)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                Text(model.id)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .background(isSelected ? provider.color.opacity(0.06) : Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(
+                        isSelected ? provider.color : Color(nsColor: .separatorColor),
+                        lineWidth: isSelected ? 2 : 1
+                    )
+            )
         }
-        .padding(24)
-        .onAppear {
-            viewModel.detectOllamaWithModels()
-        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Validating View
@@ -688,7 +968,6 @@ struct LLMSetupView: View {
 
     private var completeView: some View {
         VStack(spacing: 24) {
-            // Success animation
             ZStack {
                 Circle()
                     .fill(Color.green.opacity(0.1))
@@ -703,8 +982,8 @@ struct LLMSetupView: View {
                 Text("AI 供應商設定完成！")
                     .font(.system(size: 20, weight: .bold, design: .monospaced))
 
-                if let provider = viewModel.selectedProvider {
-                    Text("\(provider.modelName) 已準備就緒")
+                if let model = viewModel.selectedModel {
+                    Text("\(model.displayName) 已準備就緒")
                         .foregroundStyle(.secondary)
                 }
             }
@@ -714,8 +993,18 @@ struct LLMSetupView: View {
                 VStack(spacing: 12) {
                     configRow("供應商", provider.displayName)
                     Divider()
-                    configRow("模型", provider.modelName)
-                    Divider()
+                    if let model = viewModel.selectedModel {
+                        configRow("模型", model.displayName)
+                        Divider()
+                    }
+                    if let auth = viewModel.selectedAuthChoice {
+                        configRow("驗證方式", auth.label)
+                        Divider()
+                    }
+                    if viewModel.enableFailover, let failover = provider.failoverModel {
+                        configRow("備援模型", failover.displayName)
+                        Divider()
+                    }
                     configRow("設定檔", "~/.openclaw/openclaw.json")
                 }
                 .padding()
@@ -757,66 +1046,53 @@ struct LLMSetupView: View {
             case .selectProvider:
                 EmptyView()
 
-            case .setupGuide:
-                if let provider = viewModel.selectedProvider {
-                    if viewModel.currentGuideStep < provider.setupSteps.count - 1 {
-                        Button("下一步") {
-                            viewModel.currentGuideStep += 1
-                        }
-                        .buttonStyle(.borderedProminent)
-                    } else {
-                        // Determine next step label based on auth method
-                        let nextLabel: String = {
-                            switch provider.authMethod {
-                            case .apiKey: return "輸入 API 金鑰"
-                            case .oauth: return "授權登入"
-                            case .none: return "完成設定"
-                            }
-                        }()
-
-                        Button(nextLabel) {
-                            switch provider.authMethod {
-                            case .apiKey:
-                                viewModel.currentStep = .enterKey
-                            case .oauth:
-                                // OAuth flow: skip key entry, go to validation
-                                Task { await viewModel.validateAndSave() }
-                            case .none:
-                                if provider == .ollama {
-                                    viewModel.currentStep = .ollamaDetection
-                                } else {
-                                    Task { await viewModel.validateAndSave() }
-                                }
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-                }
-
-            case .enterKey:
-                Button("驗證並儲存") {
-                    Task { await viewModel.validateAndSave() }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(viewModel.apiKey.isEmpty)
-
-            case .ollamaDetection:
+            case .selectAuth:
                 Button("繼續") {
+                    viewModel.proceedFromAuth()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(viewModel.selectedAuthChoice == nil)
+
+            case .enterSecret:
+                if let auth = viewModel.selectedAuthChoice,
+                   auth.method == .deviceCode || auth.method == .oauth {
+                    Button(viewModel.cliSucceeded ? "授權成功，繼續" : "跳過，稍後設定") {
+                        viewModel.currentStep = .selectModel
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(viewModel.oauthRunning)
+                } else {
+                    Button("驗證") {
+                        viewModel.proceedFromSecret()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(viewModel.secretInput.isEmpty)
+                }
+
+            case .selectModel:
+                Button("完成設定") {
                     Task { await viewModel.validateAndSave() }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(!viewModel.ollamaInstalled)
+                .disabled(viewModel.selectedModel == nil)
 
             case .validating:
                 EmptyView()
 
             case .complete:
                 Button("繼續") {
-                    if let p = viewModel.selectedProvider {
-                        appState.trackEvent("llm_setup_complete", module: "llm", meta: [
+                    if let p = viewModel.selectedProvider,
+                       let m = viewModel.selectedModel {
+                        var meta = [
                             "provider": p.rawValue,
-                            "model": p.backendModel
-                        ])
+                            "model": m.id,
+                            "auth": viewModel.selectedAuthChoice?.id ?? "unknown",
+                            "failover": viewModel.enableFailover ? "on" : "off"
+                        ]
+                        if viewModel.enableFailover, let f = p.failoverModel {
+                            meta["failover_model"] = f.id
+                        }
+                        appState.trackEvent("llm_setup_complete", module: "llm", meta: meta)
                     }
                     onComplete?()
                 }
@@ -833,164 +1109,304 @@ struct LLMSetupView: View {
 class LLMSetupViewModel: ObservableObject {
     enum Step {
         case selectProvider
-        case setupGuide
-        case enterKey
-        case ollamaDetection
+        case selectAuth
+        case enterSecret
+        case selectModel
         case validating
         case complete
     }
 
     @Published var currentStep: Step = .selectProvider
     @Published var selectedProvider: LLMProvider?
-    @Published var apiKey: String = ""
+    @Published var selectedAuthChoice: AuthChoice?
+    @Published var selectedModel: ModelOption?
+    @Published var secretInput: String = ""
     @Published var showKey: Bool = false
-    @Published var currentGuideStep: Int = 0
     @Published var validationError: String?
-    @Published var showCopiedFeedback: Bool = false
+    @Published var enableFailover: Bool = true
 
-    // Ollama detection
-    @Published var ollamaInstalled: Bool = false
-    @Published var isCheckingOllama: Bool = false
-    @Published var ollamaModels: [String] = []
-
-    func proceedFromSelection() {
-        guard let provider = selectedProvider else { return }
-
-        currentGuideStep = 0
-        apiKey = ""
+    func selectProvider(_ provider: LLMProvider) {
+        selectedProvider = provider
+        selectedAuthChoice = provider.defaultAuthChoice
+        selectedModel = provider.defaultModel
+        secretInput = ""
         validationError = nil
+        enableFailover = provider.failoverModel != nil
 
-        switch provider {
-        case .ollama:
-            currentStep = .ollamaDetection
-        default:
-            // All providers go through setup guide first
-            currentStep = .setupGuide
+        // Check if there's existing LLM config
+        checkExistingLLMConfig()
+
+        // If only one auth choice, skip auth selection
+        if provider.authChoices.count == 1 {
+            proceedFromAuth()
+        } else {
+            currentStep = .selectAuth
         }
+    }
+
+    /// Detect existing LLM config in ~/.openclaw/openclaw.json
+    private func checkExistingLLMConfig() {
+        let configManager = ConfigManager.shared
+        configManager.loadConfig()
+        if let provider = configManager.llmProviderName,
+           let model = configManager.llmModelDisplay,
+           !provider.isEmpty {
+            existingLLMDetected = true
+            existingLLMSummary = "\(provider.capitalized) \(model)"
+        } else {
+            existingLLMDetected = false
+            existingLLMSummary = ""
+        }
+    }
+
+    @Published var oauthStatus: String = ""
+    @Published var oauthRunning: Bool = false
+    @Published var cliOutputLines: [String] = []
+    @Published var cliExitCode: Int32? = nil
+    @Published var cliSucceeded: Bool = false
+    @Published var existingLLMDetected: Bool = false
+    @Published var existingLLMSummary: String = ""
+
+    func proceedFromAuth() {
+        guard let authChoice = selectedAuthChoice else { return }
+
+        switch authChoice.method {
+        case .apiKey, .setupToken:
+            currentStep = .enterSecret
+        case .deviceCode, .oauth:
+            // Run OAuth inline inside the app
+            currentStep = .enterSecret
+            runOAuthInline()
+        case .none:
+            currentStep = .selectModel
+        }
+    }
+
+    func proceedFromSecret() {
+        guard let provider = selectedProvider,
+              let authChoice = selectedAuthChoice else { return }
+
+        // Validate input
+        if !provider.validateInput(secretInput, authChoice: authChoice) {
+            if authChoice.method == .setupToken {
+                validationError = "Token 格式無效，請確認已正確複製"
+            } else if !provider.keyPrefix.isEmpty {
+                validationError = "金鑰格式無效，應以 \(provider.keyPrefix) 開頭"
+            } else {
+                validationError = "金鑰格式無效"
+            }
+            return
+        }
+
+        validationError = nil
+        currentStep = .selectModel
     }
 
     func goBack() {
+        guard let provider = selectedProvider else {
+            currentStep = .selectProvider
+            return
+        }
+
         switch currentStep {
-        case .setupGuide:
-            if currentGuideStep > 0 {
-                currentGuideStep -= 1
+        case .selectAuth:
+            currentStep = .selectProvider
+        case .enterSecret:
+            if provider.authChoices.count > 1 {
+                currentStep = .selectAuth
             } else {
                 currentStep = .selectProvider
             }
-        case .enterKey:
-            if let provider = selectedProvider {
-                currentStep = .setupGuide
-                currentGuideStep = provider.setupSteps.count - 1
+        case .selectModel:
+            if let authChoice = selectedAuthChoice,
+               authChoice.method == .apiKey || authChoice.method == .setupToken {
+                currentStep = .enterSecret
+            } else if provider.authChoices.count > 1 {
+                currentStep = .selectAuth
+            } else {
+                currentStep = .selectProvider
             }
-        case .ollamaDetection:
-            currentStep = .selectProvider
         default:
             currentStep = .selectProvider
-        }
-    }
-
-    func checkOllamaInstalled() {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/which")
-        task.arguments = ["ollama"]
-
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = pipe
-
-        do {
-            try task.run()
-            task.waitUntilExit()
-            ollamaInstalled = task.terminationStatus == 0
-        } catch {
-            ollamaInstalled = false
-        }
-    }
-
-    func detectOllamaWithModels() {
-        isCheckingOllama = true
-        ollamaModels = []
-
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
-            task.arguments = ["-s", "http://localhost:11434/api/tags"]
-
-            let pipe = Pipe()
-            task.standardOutput = pipe
-            task.standardError = FileHandle.nullDevice
-
-            do {
-                try task.run()
-                task.waitUntilExit()
-
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-
-                DispatchQueue.main.async {
-                    self?.isCheckingOllama = false
-
-                    if task.terminationStatus == 0,
-                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                       let models = json["models"] as? [[String: Any]] {
-                        self?.ollamaInstalled = true
-                        self?.ollamaModels = models.compactMap { $0["name"] as? String }
-                    } else {
-                        self?.ollamaInstalled = false
-                    }
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self?.isCheckingOllama = false
-                    self?.ollamaInstalled = false
-                }
-            }
         }
     }
 
     func validateAndSave() async {
-        guard let provider = selectedProvider else { return }
+        guard let provider = selectedProvider,
+              let model = selectedModel else { return }
 
         validationError = nil
         currentStep = .validating
 
-        // Format validation for API key providers
-        if provider.requiresAPIKey {
-            guard provider.validateKeyFormat(apiKey) else {
-                let hint = provider.keyPrefix.isEmpty
-                    ? "金鑰格式無效"
-                    : "金鑰格式無效，應以 \(provider.keyPrefix) 開頭"
-                validationError = hint
-                currentStep = .enterKey
-                return
-            }
-        }
-
         // Simulate API validation
         do {
             try await Task.sleep(nanoseconds: 1_000_000_000)
-            try saveToConfig(provider: provider)
+            try saveToConfig(provider: provider, model: model)
             currentStep = .complete
         } catch {
             validationError = error.localizedDescription
-            switch provider.authMethod {
-            case .apiKey:
-                currentStep = .enterKey
-            case .oauth:
-                currentStep = .setupGuide
-            case .none:
-                currentStep = provider == .ollama ? .ollamaDetection : .selectProvider
+            currentStep = .selectModel
+        }
+    }
+
+    /// Build the full openclaw onboard command string for OAuth
+    func oauthCommand() -> String {
+        guard let provider = selectedProvider,
+              let authChoice = selectedAuthChoice else { return "" }
+        let authChoiceValue = provider.onboardAuthChoiceValue(for: authChoice) ?? authChoice.id
+        return "openclaw onboard --auth-choice \(authChoiceValue)"
+    }
+
+    /// Run OAuth inline — streams CLI output into the app
+    func runOAuthInline() {
+        guard !oauthRunning else { return }
+        oauthRunning = true
+        cliOutputLines = []
+        cliExitCode = nil
+        cliSucceeded = false
+        oauthStatus = "正在執行..."
+
+        let cmd = oauthCommand()
+
+        Task { @MainActor in
+            let result = await ShellRunner.runWithStreaming(cmd, onOutput: { [weak self] text in
+                self?.appendCLIOutput(text)
+            }, onError: { [weak self] text in
+                self?.appendCLIOutput(text)
+            })
+
+            cliExitCode = result.exitCode
+            oauthRunning = false
+
+            if result.success {
+                cliSucceeded = true
+                oauthStatus = "授權完成"
+                cliOutputLines.append("")
+                cliOutputLines.append("[完成] 授權設定成功")
+            } else {
+                oauthStatus = "執行失敗（exit code \(result.exitCode)）"
+                cliOutputLines.append("")
+                cliOutputLines.append("[錯誤] 指令結束，exit code: \(result.exitCode)")
             }
         }
     }
 
-    private func saveToConfig(provider: LLMProvider) throws {
+    private func appendCLIOutput(_ text: String) {
+        let lines = text.components(separatedBy: .newlines)
+        for line in lines {
+            if !line.isEmpty {
+                cliOutputLines.append(line)
+            }
+        }
+    }
+
+    /// Parsed and cleaned CLI output lines for display
+    struct ParsedLine {
+        let text: String
+        let color: Color
+    }
+
+    var parsedCLILines: [ParsedLine] {
+        cliOutputLines.compactMap { raw in
+            let cleaned = Self.stripAnsi(raw)
+            // Skip pure box-drawing decoration lines
+            let stripped = cleaned.trimmingCharacters(in: .whitespaces)
+            if stripped.isEmpty { return nil }
+            // Skip lines that are only box chars (─│┌┐└┘├┤┬┴┼╭╮╰╯)
+            let boxChars = CharacterSet(charactersIn: "─│┌┐└┘├┤┬┴┼╭╮╰╯◇◆○●▸▹|+- \t")
+            if stripped.unicodeScalars.allSatisfy({ boxChars.contains($0) }) && stripped.count > 2 {
+                return nil
+            }
+            let color = Self.lineColor(cleaned)
+            return ParsedLine(text: cleaned, color: color)
+        }
+    }
+
+    /// Extract a human-readable error summary from CLI output
+    var cliErrorSummary: String {
+        let lines = cliOutputLines.map { Self.stripAnsi($0) }
+        // Look for "Config invalid", "Error:", "Problem:" etc.
+        if let configLine = lines.first(where: { $0.contains("Config invalid") || $0.contains("Invalid config") }) {
+            return configLine.trimmingCharacters(in: .whitespaces)
+        }
+        if let errorLine = lines.first(where: { $0.lowercased().contains("error") && !$0.contains("[錯誤]") }) {
+            return errorLine.trimmingCharacters(in: .whitespaces)
+        }
+        if let problemLine = lines.first(where: { $0.contains("Problem:") }) {
+            return problemLine.trimmingCharacters(in: .whitespaces)
+        }
+        return "指令執行失敗，請查看下方輸出或在終端機手動執行"
+    }
+
+    /// Strip ANSI escape sequences
+    private static func stripAnsi(_ text: String) -> String {
+        text.replacingOccurrences(
+            of: "\\x1b\\[[0-9;]*[a-zA-Z]|\\e\\[[0-9;]*[a-zA-Z]|\\u001B\\[[0-9;]*[a-zA-Z]",
+            with: "",
+            options: .regularExpression
+        )
+    }
+
+    /// Color for a cleaned CLI line
+    private static func lineColor(_ line: String) -> Color {
+        let lower = line.lowercased()
+        if line.hasPrefix("[完成]") || lower.contains("success") || lower.contains("configured") { return .green }
+        if line.hasPrefix("[錯誤]") || lower.contains("error") || lower.contains("invalid") { return Color(red: 1.0, green: 0.4, blue: 0.4) }
+        if lower.contains("warning") { return .orange }
+        if lower.contains("http://") || lower.contains("https://") { return .cyan }
+        if lower.contains("doctor") || lower.contains("config") { return .yellow.opacity(0.8) }
+        return .white.opacity(0.75)
+    }
+
+    /// Save config via `openclaw onboard --non-interactive` for API key / token,
+    /// or via ConfigManager as fallback
+    private func saveToConfig(provider: LLMProvider, model: ModelOption) throws {
+        let authChoice = selectedAuthChoice
+
+        // For API key / token providers, try openclaw onboard CLI first
+        if let auth = authChoice,
+           (auth.method == .apiKey || auth.method == .setupToken),
+           !secretInput.isEmpty {
+            let args = provider.onboardArgs(authChoice: auth, secret: secretInput, modelId: model.id)
+            runOpenClawOnboard(args)
+        }
+
+        // Also save to local config for app display
         let configManager = ConfigManager.shared
         try configManager.setLLMConfig(
             provider: provider.rawValue,
-            model: provider.backendModel,
-            displayModel: provider.modelName,
-            apiKey: provider.requiresAPIKey ? apiKey : nil,
-            configKey: provider.requiresAPIKey ? provider.configKey : nil
+            model: model.id,
+            displayModel: model.displayName,
+            apiKey: (authChoice?.method == .apiKey || authChoice?.method == .setupToken) ? secretInput : nil,
+            configKey: authChoice?.method == .apiKey ? provider.configKey : nil
         )
+    }
+
+    /// Run `openclaw onboard` with given args in background
+    private func runOpenClawOnboard(_ args: [String]) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let task = Process()
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            task.environment = ProcessInfo.processInfo.environment
+            task.environment?["PATH"] = "\(home)/.npm-global/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+
+            // Find openclaw binary
+            let candidates = [
+                "\(home)/.npm-global/bin/openclaw",
+                "/opt/homebrew/bin/openclaw",
+                "/usr/local/bin/openclaw"
+            ]
+            guard let bin = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+                return
+            }
+
+            task.executableURL = URL(fileURLWithPath: bin)
+            task.arguments = args
+            task.standardOutput = FileHandle.nullDevice
+            task.standardError = FileHandle.nullDevice
+
+            try? task.run()
+            task.waitUntilExit()
+        }
     }
 }

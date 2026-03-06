@@ -65,7 +65,7 @@ struct QRCodeGenerator {
     
     /// Default share message for ClawInstaller
     static var defaultShareText: String {
-        "用 ClawInstaller 三分鐘搞定 OpenClaw 安裝！#ClawInstaller #OpenClaw"
+        "用 ClawInstaller 三分鐘搞定 OpenClaw 安裝！#OpenClaw"
     }
     
     static var defaultShareURL: String {

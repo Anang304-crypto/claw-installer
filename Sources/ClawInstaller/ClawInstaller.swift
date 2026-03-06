@@ -12,16 +12,29 @@ struct ClawInstallerApp: App {
                 .environmentObject(appState)
                 .frame(
                     minWidth: appState.currentStep.rawValue >= AppState.Step.monitor.rawValue ? 960 : 760,
-                    minHeight: appState.currentStep.rawValue >= AppState.Step.monitor.rawValue ? 640 : 540
+                    minHeight: appState.currentStep.rawValue >= AppState.Step.monitor.rawValue ? 640 : 640
                 )
                 .frame(
                     width: appState.currentStep.rawValue >= AppState.Step.monitor.rawValue ? 960 : 760,
-                    height: appState.currentStep.rawValue >= AppState.Step.monitor.rawValue ? 640 : 540
+                    height: appState.currentStep.rawValue >= AppState.Step.monitor.rawValue ? 640 : 640
                 )
                 .preferredColorScheme(.light)
                 .animation(.easeInOut(duration: 0.3), value: appState.currentStep)
         }
         .windowResizability(.contentSize)
+        .commands {
+            // Standard Edit menu — enables Cmd+C/V/X/A in TextFields
+            CommandGroup(replacing: .pasteboard) {
+                Button("剪下") { NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: nil) }
+                    .keyboardShortcut("x")
+                Button("複製") { NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: nil) }
+                    .keyboardShortcut("c")
+                Button("貼上") { NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil) }
+                    .keyboardShortcut("v")
+                Button("全選") { NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil) }
+                    .keyboardShortcut("a")
+            }
+        }
 
         MenuBarExtra("OpenClaw", systemImage: "ant.fill") {
             MenuBarView()

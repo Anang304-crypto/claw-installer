@@ -14,7 +14,7 @@ struct DoneView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 // --- Celebration header ---
                 celebrationGroup
 
@@ -24,10 +24,8 @@ struct DoneView: View {
                 // --- Action buttons row ---
                 actionButtonsRow
 
-                // --- GWS Skills nudge (post-install, non-blocking) ---
-                if !appState.hasInstalledGWSSkills && !appState.gwsSkillsDismissed {
-                    gwsSkillsNudge
-                }
+                // --- Threads share CTA with QR code ---
+                threadsShareCard
 
                 // --- Tip card ---
                 tipCard
@@ -38,8 +36,8 @@ struct DoneView: View {
                 // --- Footer ---
                 footerRow
             }
-            .padding(.top, 28)
-            .padding(.bottom, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
             .padding(.horizontal, 40)
         }
         .onAppear {
@@ -270,6 +268,83 @@ struct DoneView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Threads Share CTA
+
+    private var threadsShareCard: some View {
+        let shareText = "用 ClawInstaller 三分鐘搞定 OpenClaw 安裝！#OpenClaw"
+        let shareURL = "https://github.com/clawinstaller/claw-installer"
+
+        return HStack(spacing: 16) {
+            // QR Code
+            if let threadsURL = QRCodeGenerator.threadsShareURL(text: shareText, url: shareURL),
+               let qrImage = QRCodeGenerator.generate(from: threadsURL.absoluteString, size: 120) {
+                VStack(spacing: 4) {
+                    Image(nsImage: qrImage)
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: 80, height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                    Text("掃碼分享")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            // Text + CTA
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "at")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.primary)
+                    Text("分享到 Threads")
+                        .font(.custom("Geist", size: 14).bold())
+                        .foregroundStyle(.primary)
+                }
+
+                Text("告訴朋友你的 AI 團隊已上線！掃描 QR Code 或點擊按鈕直接發文。")
+                    .font(.custom("Geist", size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+
+                Button {
+                    if let url = QRCodeGenerator.threadsShareURL(text: shareText, url: shareURL) {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("發佈到 Threads")
+                            .font(.custom("Geist", size: 12).bold())
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.black)
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [Color(red: 0.98, green: 0.96, blue: 1.0), Color(red: 0.96, green: 0.97, blue: 1.0)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.purple.opacity(0.15), lineWidth: 1)
         )
     }
 
