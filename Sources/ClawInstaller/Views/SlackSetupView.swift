@@ -1,40 +1,53 @@
-// TelegramSetupView — Step-by-step Telegram Bot Setup
+// SlackSetupView — Step-by-step Slack Bot Setup
 
 import SwiftUI
 
-struct TelegramSetupView: View {
+struct SlackSetupView: View {
     let onComplete: () -> Void
 
     @StateObject private var configManager = ConfigManager.shared
     @State private var currentStep: Int = 0
     @State private var botToken: String = ""
+    @State private var appToken: String = ""
     @State private var isValidating: Bool = false
     @State private var validationError: String?
     @State private var isTokenValid: Bool = false
 
-    // Telegram brand color
-    private let telegramColor = Color(red: 0.0, green: 0.533, blue: 0.8) // #0088CC
-
     private let steps = [
         SetupStep(
-            title: "開啟 BotFather",
-            description: "開啟 Telegram 並搜尋 @BotFather，或點擊下方連結。",
-            action: "開啟 BotFather",
-            link: "https://t.me/BotFather"
+            title: "前往 Slack API",
+            description: "登入 Slack API 網站，建立新的 App。",
+            action: "開啟 Slack API",
+            link: "https://api.slack.com/apps"
         ),
         SetupStep(
-            title: "建立新 Bot",
-            description: "傳送 /newbot 給 BotFather，然後依照提示操作：\n\n1. 輸入一個顯示名稱（例如「My OpenClaw」）\n2. 輸入一個以 'bot' 結尾的使用者名稱（例如「my_openclaw_bot」）",
+            title: "建立 Slack App",
+            description: "1. 點選「Create New App」\n2. 選擇「From scratch」\n3. 輸入 App 名稱（例如「OpenClaw」）\n4. 選擇你的 Workspace\n5. 點選「Create App」",
             action: nil,
             link: nil
         ),
         SetupStep(
-            title: "複製 Bot Token",
-            description: "BotFather 會給你一組 Token，格式如下：\n\n123456789:ABCdefGHIjklMNOpqrsTUVwxyz\n\n複製後貼到下方欄位：",
+            title: "設定 Bot 權限",
+            description: "在左側選單選擇「OAuth & Permissions」：\n\n捲動到「Scopes」→「Bot Token Scopes」，新增：\n• chat:write\n• channels:read\n• im:read\n• im:write\n• im:history",
+            action: nil,
+            link: nil
+        ),
+        SetupStep(
+            title: "安裝到 Workspace",
+            description: "1. 回到「OAuth & Permissions」頁面頂部\n2. 點選「Install to Workspace」\n3. 授權後，複製「Bot User OAuth Token」\n   （以 xoxb- 開頭）",
+            action: nil,
+            link: nil
+        ),
+        SetupStep(
+            title: "取得 App-Level Token",
+            description: "1. 前往「Basic Information」頁面\n2. 捲動到「App-Level Tokens」\n3. 點選「Generate Token and Scopes」\n4. 輸入名稱，新增 scope：connections:write\n5. 點選「Generate」，複製 token（以 xapp- 開頭）",
             action: nil,
             link: nil
         )
     ]
+
+    // Slack brand color
+    private let slackPink = Color(red: 0.878, green: 0.118, blue: 0.353)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,10 +61,18 @@ struct TelegramSetupView: View {
                         stepView(steps[currentStep])
                     }
 
-                    // Token input on last step
-                    if currentStep == 2 {
-                        tokenInputView
+                    // Bot Token input on step 3
+                    if currentStep == 3 {
+                        botTokenInputView
                     }
+
+                    // App Token input on step 4
+                    if currentStep == 4 {
+                        appTokenInputView
+                    }
+
+                    // Visual hints
+                    visualHint(for: currentStep)
                 }
                 .padding(24)
             }
@@ -69,7 +90,7 @@ struct TelegramSetupView: View {
         HStack(spacing: 4) {
             ForEach(0..<steps.count, id: \.self) { index in
                 Rectangle()
-                    .fill(index <= currentStep ? telegramColor : Color.secondary.opacity(0.3))
+                    .fill(index <= currentStep ? slackPink : Color.secondary.opacity(0.3))
                     .frame(height: 4)
             }
         }
@@ -108,74 +129,79 @@ struct TelegramSetupView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(telegramColor)
+                .tint(slackPink)
             }
-
-            // Visual hints
-            screenshotPlaceholder(for: currentStep)
         }
     }
+
+    // MARK: - Visual Hints
 
     @ViewBuilder
-    private func screenshotPlaceholder(for step: Int) -> some View {
-        VStack {
-            switch step {
-            case 0:
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 40))
+    private func visualHint(for step: Int) -> some View {
+        switch step {
+        case 2:
+            VStack(alignment: .leading, spacing: 4) {
+                Text("需要的 Bot Token Scopes：")
+                    .font(.caption.bold())
                     .foregroundStyle(.secondary)
-                Text("在 Telegram 中搜尋 @BotFather")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            case 1:
-                VStack(alignment: .leading, spacing: 8) {
-                    mockChatBubble(isBot: false, text: "/newbot")
-                    mockChatBubble(isBot: true, text: "好的，讓我們建立新的 Bot。請選擇一個名稱。")
-                    mockChatBubble(isBot: false, text: "My OpenClaw")
-                    mockChatBubble(isBot: true, text: "很好。現在請選擇一個使用者名稱...")
-                }
-            default:
-                EmptyView()
+                scopeItem("chat:write")
+                scopeItem("channels:read")
+                scopeItem("im:read")
+                scopeItem("im:write")
+                scopeItem("im:history")
             }
+            .padding()
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+        default:
+            EmptyView()
         }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
-    private func mockChatBubble(isBot: Bool, text: String) -> some View {
-        HStack {
-            if !isBot { Spacer() }
-
+    private func scopeItem(_ text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 10))
+                .foregroundStyle(slackPink)
             Text(text)
-                .font(.system(size: 13))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(isBot ? Color.secondary.opacity(0.2) : telegramColor)
-                .foregroundColor(isBot ? .primary : .white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-
-            if isBot { Spacer() }
+                .font(.system(size: 12, design: .monospaced))
         }
     }
 
-    // MARK: - Token Input
+    // MARK: - Bot Token Input
 
-    private var tokenInputView: some View {
+    private var botTokenInputView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Bot Token")
+            Text("Bot User OAuth Token")
+                .font(.headline)
+
+            SecureField("xoxb-...", text: $botToken)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+
+            Text("以 xoxb- 開頭的 Bot Token")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - App Token Input
+
+    private var appTokenInputView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("App-Level Token")
                 .font(.headline)
 
             HStack {
-                SecureField("貼上你的 Bot Token", text: $botToken)
+                SecureField("xapp-...", text: $appToken)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(.body, design: .monospaced))
 
                 Button("驗證") {
-                    validateToken()
+                    validateTokens()
                 }
-                .disabled(botToken.isEmpty || isValidating)
+                .disabled(botToken.isEmpty || appToken.isEmpty || isValidating)
             }
 
             if isValidating {
@@ -197,8 +223,12 @@ struct TelegramSetupView: View {
             if isTokenValid {
                 Label("Token 驗證成功！", systemImage: "checkmark.circle.fill")
                     .font(.caption)
-                    .foregroundStyle(telegramColor)
+                    .foregroundStyle(slackPink)
             }
+
+            Text("以 xapp- 開頭的 App-Level Token（用於 Socket Mode）")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -219,13 +249,13 @@ struct TelegramSetupView: View {
                     currentStep += 1
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(telegramColor)
+                .tint(slackPink)
             } else {
                 Button("儲存並繼續") {
                     saveAndContinue()
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(telegramColor)
+                .tint(slackPink)
                 .disabled(!isTokenValid)
             }
         }
@@ -234,39 +264,33 @@ struct TelegramSetupView: View {
 
     // MARK: - Actions
 
-    private func validateToken() {
+    private func validateTokens() {
         isValidating = true
         validationError = nil
         isTokenValid = false
 
-        // Basic format validation
-        let tokenPattern = #"^\d+:[A-Za-z0-9_-]{35,}$"#
-        let isValidFormat = botToken.range(of: tokenPattern, options: .regularExpression) != nil
+        let botValid = botToken.hasPrefix("xoxb-") && botToken.count > 20
+        let appValid = appToken.hasPrefix("xapp-") && appToken.count > 20
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             isValidating = false
 
-            if isValidFormat {
-                isTokenValid = true
+            if !botValid {
+                validationError = "Bot Token 格式不正確，應以 xoxb- 開頭"
+            } else if !appValid {
+                validationError = "App Token 格式不正確，應以 xapp- 開頭"
             } else {
-                validationError = "Token 格式不正確，應如 123456789:ABCdef..."
+                isTokenValid = true
             }
         }
     }
 
     private func saveAndContinue() {
         do {
-            try configManager.setTelegramToken(botToken)
+            try configManager.setSlackConfig(botToken: botToken, appToken: appToken)
             onComplete()
         } catch {
             validationError = "儲存失敗：\(error.localizedDescription)"
         }
     }
-}
-
-struct SetupStep {
-    let title: String
-    let description: String
-    let action: String?
-    let link: String?
 }

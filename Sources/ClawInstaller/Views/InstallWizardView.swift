@@ -18,10 +18,10 @@ struct InstallWizardView: View {
             case .installing:
                 installingView
             case .success:
-                DoneView(
-                    installedVersion: installer.installedVersion,
-                    installDuration: installer.installDuration
-                )
+                // Navigate to LLM setup (next wizard step)
+                Color.clear.onAppear {
+                    appState.currentStep = .llmSetup
+                }
             case .failed:
                 failedView
             }

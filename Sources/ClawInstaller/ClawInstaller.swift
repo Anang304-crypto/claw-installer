@@ -11,12 +11,12 @@ struct ClawInstallerApp: App {
             MainView()
                 .environmentObject(appState)
                 .frame(
-                    minWidth: appState.currentStep == .monitor ? 960 : 760,
-                    minHeight: appState.currentStep == .monitor ? 640 : 540
+                    minWidth: appState.currentStep.rawValue >= AppState.Step.monitor.rawValue ? 960 : 760,
+                    minHeight: appState.currentStep.rawValue >= AppState.Step.monitor.rawValue ? 640 : 540
                 )
                 .frame(
-                    width: appState.currentStep == .monitor ? 960 : 760,
-                    height: appState.currentStep == .monitor ? 640 : 540
+                    width: appState.currentStep.rawValue >= AppState.Step.monitor.rawValue ? 960 : 760,
+                    height: appState.currentStep.rawValue >= AppState.Step.monitor.rawValue ? 640 : 540
                 )
                 .preferredColorScheme(.light)
                 .animation(.easeInOut(duration: 0.3), value: appState.currentStep)
@@ -35,7 +35,7 @@ struct MainView: View {
 
     var body: some View {
         Group {
-            if appState.currentStep == .monitor {
+            if appState.currentStep.rawValue >= AppState.Step.monitor.rawValue {
                 // Post-install: sidebar layout
                 NavigationSplitView(columnVisibility: .constant(.all)) {
                     HomeSidebar()
@@ -62,8 +62,16 @@ struct MainView: View {
             PreflightView()
         case .install:
             InstallWizardView()
+        case .llmSetup:
+            LLMSetupView(onComplete: {
+                appState.currentStep = .channels
+            })
         case .channels:
             ChannelSetupView()
+        case .skills:
+            SkillsInstallView()
+        case .done:
+            DoneView()
         case .support:
             AISupportView()
         default:

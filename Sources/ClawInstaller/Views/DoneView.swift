@@ -1,78 +1,63 @@
-// DoneView — V2 Installation Complete Screen with QR Code Sharing
+// DoneView — Installation Complete Screen with Health Check & Tips
 
 import SwiftUI
 
 struct DoneView: View {
-    let installedVersion: String?
-    let installDuration: TimeInterval // seconds elapsed during install
-
     @EnvironmentObject var appState: AppState
+    @StateObject private var configManager = ConfigManager.shared
 
-    @State private var qrCodeImage: NSImage?
-    @State private var selectedPlatform: SharePlatform = .threads
-    @State private var installerNumber: Int = 2_847
-
-    enum SharePlatform: String, CaseIterable {
-        case threads = "Threads"
-        case twitter = "X (Twitter)"
-    }
-
-    // MARK: - Helpers
-
-    private var formattedDuration: String {
-        let minutes = Int(installDuration) / 60
-        let seconds = Int(installDuration) % 60
-        return "\(minutes) \u{5206} \(String(format: "%02d", seconds)) \u{79D2}"
-    }
-
-    private var versionString: String {
-        if let v = installedVersion { return "v\(v)" }
-        return "v--"
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
     }
 
     // MARK: - Body
 
     var body: some View {
-        VStack(spacing: 16) {
-            // --- Celebration group ---
-            celebrationGroup
+        ScrollView {
+            VStack(spacing: 16) {
+                // --- Celebration header ---
+                celebrationGroup
 
-            // --- Stats row ---
-            statsRow
+                // --- Health check card ---
+                healthCheckCard
 
-            // --- Try section ---
-            trySection
+                // --- Action buttons row ---
+                actionButtonsRow
 
-            // --- QR share card ---
-            qrShareCard
+                // --- Tip card ---
+                tipCard
 
-            // --- Open console button ---
-            openConsoleButton
+                // --- Open console button ---
+                openConsoleButton
 
-            Spacer(minLength: 0)
-
-            // --- Footer ---
-            footerRow
+                // --- Footer ---
+                footerRow
+            }
+            .padding(.top, 28)
+            .padding(.bottom, 24)
+            .padding(.horizontal, 40)
         }
-        .padding(.top, 32)
-        .padding(.bottom, 28)
-        .padding(.horizontal, 40)
         .onAppear {
-            generateQRCode()
+            configManager.loadConfig()
+            appState.trackEvent("setup_complete", module: "app", meta: [
+                "channels": configManager.enabledChannelNames.joined(separator: ","),
+                "llm": configManager.llmProviderName ?? "none",
+                "skills": Array(appState.selectedSkills).sorted().joined(separator: ",")
+            ])
         }
     }
 
     // MARK: - Celebration Group
 
     private var celebrationGroup: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             ZStack {
                 Circle()
                     .fill(.green)
-                    .frame(width: 64, height: 64)
+                    .frame(width: 52, height: 52)
 
                 Image(systemName: "checkmark")
-                    .font(.system(size: 32, weight: .bold))
+                    .font(.system(size: 26, weight: .bold))
                     .foregroundStyle(.white)
             }
 
@@ -90,189 +75,198 @@ struct DoneView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Stats Row
+    // MARK: - Health Check Card
 
-    private var statsRow: some View {
-        HStack(spacing: 8) {
-            statCard(value: formattedDuration, label: "安裝耗時")
-            statCard(value: versionString, label: "OpenClaw 版本")
-            statCard(value: "# \(installerNumber)", label: "你是第 N 位安裝者", valueColor: .orange)
+    private var healthCheckCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("系統狀態")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.primary)
+
+            VStack(alignment: .leading, spacing: 8) {
+                // AI Model
+                statusRow(
+                    icon: "checkmark.circle.fill",
+                    iconColor: .green,
+                    label: "AI 模型",
+                    value: llmSummary
+                )
+
+                // Channels
+                statusRow(
+                    icon: "checkmark.circle.fill",
+                    iconColor: .green,
+                    label: "頻道",
+                    value: channelsSummary
+                )
+
+                // Skills
+                statusRow(
+                    icon: "checkmark.circle.fill",
+                    iconColor: .green,
+                    label: "技能",
+                    value: skillsSummary
+                )
+
+                // Gateway
+                statusRow(
+                    icon: "checkmark.circle.fill",
+                    iconColor: .green,
+                    label: "Gateway 運行中",
+                    value: "ws://127.0.0.1:18789"
+                )
+            }
         }
-    }
-
-    private func statCard(value: String, label: String, valueColor: Color = .primary) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.custom("JetBrains Mono", size: 15).bold())
-                .foregroundStyle(valueColor)
-
-            Text(label)
-                .font(.custom("Geist", size: 11))
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: 12)
                 .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
         )
     }
 
-    // MARK: - Try Section
+    private func statusRow(icon: String, iconColor: Color, label: String, value: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundStyle(iconColor)
 
-    private var trySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("立即體驗你的 Agent")
-                .font(.custom("Geist", size: 13).bold())
+            Text(label)
+                .font(.custom("Geist", size: 12))
+                .foregroundStyle(.secondary)
 
-            VStack(spacing: 8) {
-                tryActionCard(
-                    icon: "terminal.fill",
-                    iconColor: .purple,
-                    title: "開啟終端機",
-                    subtitle: "執行 openclaw 開始對話"
-                ) {
-                    openTerminal()
+            Spacer()
+
+            Text(value)
+                .font(.custom("JetBrains Mono", size: 11))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+        }
+    }
+
+    private var llmSummary: String {
+        if let provider = configManager.llmProviderName,
+           let model = configManager.llmModelDisplay {
+            return "\(provider.capitalized) \(model)"
+        }
+        return "未設定"
+    }
+
+    private var channelsSummary: String {
+        let names = configManager.enabledChannelNames
+        return names.isEmpty ? "未設定" : names.joined(separator: ", ")
+    }
+
+    private var skillsSummary: String {
+        let skills = Array(appState.selectedSkills).sorted()
+        return skills.isEmpty ? "未安裝" : skills.joined(separator: ", ")
+    }
+
+    // MARK: - Action Buttons Row
+
+    private var actionButtonsRow: some View {
+        HStack(spacing: 8) {
+            actionButton(
+                icon: "rectangle.split.3x3",
+                label: "開啟 Dashboard"
+            ) {
+                if let url = URL(string: "http://localhost:5173") {
+                    NSWorkspace.shared.open(url)
                 }
+            }
 
-                // Hint: how to verify
-                HStack(spacing: 6) {
-                    Image(systemName: "lightbulb.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.orange)
-                    Text("打開 Terminal 輸入")
-                        .font(.custom("Geist", size: 11))
-                        .foregroundStyle(.secondary)
-                    Text("openclaw")
-                        .font(.custom("JetBrains Mono", size: 11).bold())
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                    Text("測試是否安裝成功")
-                        .font(.custom("Geist", size: 11))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.leading, 4)
+            actionButton(
+                icon: "message.circle",
+                label: "傳訊給 Agent"
+            ) {
+                openTerminal()
+            }
 
-                tryActionCard(
-                    icon: "book.fill",
-                    iconColor: .blue,
-                    title: "閱讀文件",
-                    subtitle: "了解 OpenClaw 能做什麼"
-                ) {
-                    if let url = URL(string: "https://clawinstaller.github.io/website/guide/getting-started") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }
+            actionButton(
+                icon: "qrcode",
+                label: "分享 QR Code"
+            ) {
+                shareQRCode()
             }
         }
     }
 
-    private func tryActionCard(
-        icon: String,
-        iconColor: Color,
-        title: String,
-        subtitle: String,
-        action: @escaping () -> Void
-    ) -> some View {
+    private func actionButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundStyle(iconColor)
-                    .frame(width: 24, height: 24)
+                    .font(.system(size: 18))
+                    .foregroundStyle(.orange)
 
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(title)
-                        .font(.custom("Geist", size: 13).bold())
-                    Text(subtitle)
-                        .font(.custom("Geist", size: 11))
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                Text(label)
+                    .font(.custom("Geist", size: 11))
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
             }
-            .padding(.vertical, 8)
-            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
             .background(Color(nsColor: .controlBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: - QR Share Card
+    // MARK: - Tip Card
 
-    private var qrShareCard: some View {
-        VStack(spacing: 12) {
-            Text("📱 掃碼分享到社群")
-                .font(.custom("JetBrains Mono", size: 13).bold())
-
-            // QR code — large enough to scan
-            Group {
-                if let image = qrCodeImage {
-                    Image(nsImage: image)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 140, height: 140)
-                        .padding(8)
-                        .background(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                } else {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.secondary.opacity(0.1))
-                        .frame(width: 140, height: 140)
-                        .overlay { ProgressView() }
-                }
+    private var tipCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.orange)
+                Text("小提示")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.primary)
             }
 
-            Text("掃描 QR Code 一鍵分享你的安裝體驗")
-                .font(.custom("Geist", size: 11))
-                .foregroundStyle(.secondary)
-
-            // Platform selector
-            HStack(spacing: 8) {
-                ForEach(SharePlatform.allCases, id: \.rawValue) { platform in
-                    Button {
-                        selectedPlatform = platform
-                        generateQRCode()
-                    } label: {
-                        Text(platform.rawValue)
-                            .font(.custom("Geist", size: 11).bold())
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 5)
-                            .background(
-                                selectedPlatform == platform
-                                    ? Color.accentColor
-                                    : Color.secondary.opacity(0.12)
-                            )
-                            .foregroundStyle(
-                                selectedPlatform == platform ? .white : .primary
-                            )
-                            .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
+            VStack(alignment: .leading, spacing: 6) {
+                tipRow("如遇問題，在終端機執行 `openclaw doctor` 自動診斷")
+                tipRow("隨時在 Menu Bar 監控 Gateway 狀態")
+                tipRow("使用 `openclaw configure` 隨時修改設定")
             }
-
-            Text("#ClawInstaller #OpenClaw")
-                .font(.custom("JetBrains Mono", size: 11))
-                .foregroundStyle(.orange)
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 20)
-        .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(red: 1.0, green: 0.973, blue: 0.941)) // #FFF8F0
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(red: 1.0, green: 0.878, blue: 0.698), lineWidth: 1) // #FFE0B2
+        )
+    }
+
+    private func tipRow(_ text: String) -> some View {
+        // Parse inline code blocks marked with backticks
+        let parts = text.components(separatedBy: "`")
+        return HStack(spacing: 0) {
+            ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
+                if index % 2 == 1 {
+                    // Code block
+                    Text(part)
+                        .font(.custom("JetBrains Mono", size: 11))
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(Color.secondary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                } else {
+                    Text(part)
+                        .font(.custom("Geist", size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     // MARK: - Open Console Button
@@ -301,7 +295,7 @@ struct DoneView: View {
     private var footerRow: some View {
         HStack {
             Button {
-                if let url = URL(string: "https://clawinstaller.github.io/website/guide/getting-started/getting-started") {
+                if let url = URL(string: "https://clawinstaller.github.io/website/guide/getting-started") {
                     NSWorkspace.shared.open(url)
                 }
             } label: {
@@ -313,7 +307,7 @@ struct DoneView: View {
 
             Spacer()
 
-            Text("ClawInstaller \(versionString)")
+            Text("ClawInstaller v\(appVersion)")
                 .font(.custom("JetBrains Mono", size: 9))
                 .foregroundStyle(.primary.opacity(0.4))
         }
@@ -321,37 +315,26 @@ struct DoneView: View {
 
     // MARK: - Actions
 
-    private func generateQRCode() {
-        let shareURL: URL?
-
-        switch selectedPlatform {
-        case .threads:
-            shareURL = QRCodeGenerator.threadsShareURL(
-                text: QRCodeGenerator.defaultShareText,
-                url: QRCodeGenerator.defaultShareURL
-            )
-        case .twitter:
-            shareURL = QRCodeGenerator.twitterShareURL(
-                text: QRCodeGenerator.defaultShareText,
-                url: QRCodeGenerator.defaultShareURL
-            )
-        }
-
-        if let url = shareURL {
-            qrCodeImage = QRCodeGenerator.generate(from: url.absoluteString, size: 300)
-        }
-    }
-
     private func openTerminal() {
         let script = """
         tell application "Terminal"
             activate
-            do script "openclaw"
+            do script "export PATH=\\"$HOME/.npm-global/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\\" && openclaw"
         end tell
         """
         if let appleScript = NSAppleScript(source: script) {
             var error: NSDictionary?
             appleScript.executeAndReturnError(&error)
+        }
+    }
+
+    private func shareQRCode() {
+        // Generate share URL for Threads
+        if let url = QRCodeGenerator.threadsShareURL(
+            text: QRCodeGenerator.defaultShareText,
+            url: QRCodeGenerator.defaultShareURL
+        ) {
+            NSWorkspace.shared.open(url)
         }
     }
 }
@@ -360,8 +343,8 @@ struct DoneView: View {
 
 struct DoneView_Previews: PreviewProvider {
     static var previews: some View {
-        DoneView(installedVersion: "2.4.1", installDuration: 154)
+        DoneView()
             .environmentObject(AppState())
-            .frame(width: 480, height: 640)
+            .frame(width: 760, height: 540)
     }
 }

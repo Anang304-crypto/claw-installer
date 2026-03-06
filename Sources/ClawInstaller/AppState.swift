@@ -42,12 +42,15 @@ func appLogoImage() -> NSImage {
 @MainActor
 final class AppState: ObservableObject {
     enum Step: Int, CaseIterable {
-        case welcome = 0
-        case preflight
-        case install
-        case channels
-        case monitor  // Post-install home (sidebar mode)
-        case support
+        case welcome = 0      // Landing page
+        case preflight = 1    // System check
+        case install = 2      // OpenClaw installation
+        case llmSetup = 3     // AI provider selection
+        case channels = 4     // Channel configuration
+        case skills = 5       // Skills installation
+        case done = 6         // Installation complete
+        case support = 7      // AI support chat (wizard-mode, from failed install)
+        case monitor = 8      // Post-install home (sidebar mode)
     }
 
     enum HomeTab: String {
@@ -67,6 +70,11 @@ final class AppState: ObservableObject {
     @Published var installProgress: Double = 0
     @Published var gatewayRunning: Bool = false
     @Published var isInstalling: Bool = false
+
+    // Skills install state
+    @Published var selectedSkills: Set<String> = ["memory", "web-search", "code-exec"]
+    @Published var skillsInstallProgress: Double = 0
+    @Published var isInstallingSkills: Bool = false
     
     // Preflight results
     @Published var preflightChecker = PreflightChecker()

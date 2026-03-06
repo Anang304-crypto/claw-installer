@@ -176,6 +176,9 @@ struct AISupportView: View {
         if config.hasTelegramConfig { channels.append("telegram") }
         if config.hasDiscordConfig { channels.append("discord") }
         if config.hasWhatsAppConfig { channels.append("whatsapp") }
+        if config.hasLineConfig { channels.append("line") }
+        if config.hasSlackConfig { channels.append("slack") }
+        if config.hasTeamsConfig { channels.append("teams") }
 
         let preflightResults = checker.checks.map { check in
             BackendService.PreflightResult(
@@ -247,7 +250,7 @@ struct MenuBarView: View {
                 Circle()
                     .fill(appState.gatewayRunning ? .green : .red)
                     .frame(width: 8, height: 8)
-                Text(appState.gatewayRunning ? "Gateway Running" : "Gateway Stopped")
+                Text(appState.gatewayRunning ? "Gateway 運行中" : "Gateway 已停止")
                     .font(.headline)
             }
             .padding(.bottom, 4)
@@ -260,7 +263,7 @@ struct MenuBarView: View {
             } label: {
                 HStack {
                     Image(systemName: "arrow.clockwise")
-                    Text("Check Status")
+                    Text("檢查狀態")
                     if isCheckingStatus {
                         Spacer()
                         ProgressView()
@@ -276,7 +279,7 @@ struct MenuBarView: View {
                 } label: {
                     HStack {
                         Image(systemName: "stop.fill")
-                        Text("Stop Gateway")
+                        Text("停止 Gateway")
                     }
                 }
                 
@@ -285,7 +288,7 @@ struct MenuBarView: View {
                 } label: {
                     HStack {
                         Image(systemName: "arrow.clockwise")
-                        Text("Restart Gateway")
+                        Text("重啟 Gateway")
                     }
                 }
             } else {
@@ -294,7 +297,7 @@ struct MenuBarView: View {
                 } label: {
                     HStack {
                         Image(systemName: "play.fill")
-                        Text("Start Gateway")
+                        Text("啟動 Gateway")
                     }
                 }
             }
@@ -309,7 +312,7 @@ struct MenuBarView: View {
             } label: {
                 HStack {
                     Image(systemName: "macwindow")
-                    Text("Open ClawInstaller")
+                    Text("開啟 ClawInstaller")
                 }
             }
 
@@ -320,7 +323,7 @@ struct MenuBarView: View {
             } label: {
                 HStack {
                     Image(systemName: "doc.text")
-                    Text("View Logs")
+                    Text("查看紀錄")
                 }
             }
 
@@ -331,7 +334,7 @@ struct MenuBarView: View {
             } label: {
                 HStack {
                     Image(systemName: "power")
-                    Text("Quit")
+                    Text("結束")
                 }
             }
         }
