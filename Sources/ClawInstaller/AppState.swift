@@ -67,6 +67,10 @@ final class AppState: ObservableObject {
     @AppStorage("userToken") var userToken: String = ""
     @AppStorage("userId") var userId: String = ""
     var isLoggedIn: Bool { !userToken.isEmpty }
+
+    // Setup completion — persisted so relaunch skips wizard
+    @AppStorage("setupCompleted") var setupCompleted: Bool = false
+
     @Published var installProgress: Double = 0
     @Published var gatewayRunning: Bool = false
     @Published var isInstalling: Bool = false

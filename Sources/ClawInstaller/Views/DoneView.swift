@@ -42,6 +42,7 @@ struct DoneView: View {
         }
         .onAppear {
             configManager.loadConfig()
+            appState.setupCompleted = true
             appState.trackEvent("setup_complete", module: "app", meta: [
                 "channels": configManager.enabledChannelNames.joined(separator: ","),
                 "llm": configManager.llmProviderName ?? "none",

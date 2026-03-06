@@ -64,6 +64,24 @@ struct MainView: View {
                     .background(Color(nsColor: .windowBackgroundColor))
             }
         }
+        .onAppear {
+            resumeIfSetupCompleted()
+        }
+    }
+
+    /// If setup was previously completed and OpenClaw is still installed, skip wizard
+    private func resumeIfSetupCompleted() {
+        guard appState.setupCompleted else { return }
+        // Verify OpenClaw is still actually installed
+        Task {
+            let result = await ShellRunner.run("which openclaw 2>/dev/null || command -v openclaw 2>/dev/null")
+            if result.success && !result.stdout.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                appState.currentStep = .monitor
+            } else {
+                // OpenClaw was uninstalled — reset flag, show wizard
+                appState.setupCompleted = false
+            }
+        }
     }
 
     @ViewBuilder

@@ -4,17 +4,16 @@ import SwiftUI
 
 struct PreflightView: View {
     @EnvironmentObject var appState: AppState
-    @StateObject private var checker = PreflightChecker()
     @State private var showingFixSheet = false
     @State private var selectedCheck: PreflightCheck?
     @State private var fixingCheckId: UUID?
 
     private var passCount: Int {
-        checker.checks.filter { $0.status == .pass }.count
+        appState.preflightChecker.checks.filter { $0.status == .pass }.count
     }
 
     private var totalCount: Int {
-        checker.checks.count
+        appState.preflightChecker.checks.count
     }
 
     private var progressFraction: Double {
@@ -29,14 +28,14 @@ struct PreflightView: View {
 
             // Check list
             VStack(spacing: 6) {
-                ForEach(checker.checks) { check in
+                ForEach(appState.preflightChecker.checks) { check in
                     CheckRowV2(
                         check: check,
                         isFixing: fixingCheckId == check.id,
                         onFix: {
                             Task {
                                 fixingCheckId = check.id
-                                await checker.executeFix(for: check)
+                                await appState.preflightChecker.executeFix(for: check)
                                 fixingCheckId = nil
                             }
                         },
@@ -60,16 +59,16 @@ struct PreflightView: View {
         .frame(minWidth: 600, minHeight: 450)
         .task {
             appState.trackEvent("preflight_start", module: "preflight")
-            await checker.runAll()
-            let failCount = checker.checks.filter { $0.status == .fail }.count
+            await appState.preflightChecker.runAll()
+            let failCount = appState.preflightChecker.checks.filter { $0.status == .fail }.count
             appState.trackEvent("preflight_complete", module: "preflight", meta: [
                 "failures": String(failCount),
-                "total": String(checker.checks.count)
+                "total": String(appState.preflightChecker.checks.count)
             ])
         }
         .sheet(isPresented: $showingFixSheet) {
             if let check = selectedCheck {
-                FixSheet(check: check, checker: checker) {
+                FixSheet(check: check, checker: appState.preflightChecker) {
                     showingFixSheet = false
                 }
             }
@@ -81,7 +80,7 @@ struct PreflightView: View {
     private var progressHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if !checker.isRunning && passCount == totalCount {
+                if !appState.preflightChecker.isRunning && passCount == totalCount {
                     Text("\u{1F389}")
                         .font(.system(size: 20))
                 }
@@ -91,7 +90,7 @@ struct PreflightView: View {
                     .foregroundStyle(.primary)
             }
 
-            if checker.isRunning {
+            if appState.preflightChecker.isRunning {
                 Text("正在檢查你的系統環境...")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
@@ -167,7 +166,7 @@ struct PreflightView: View {
     }
 
     private var canContinue: Bool {
-        !checker.hasBlockingIssues && !checker.isRunning
+        !appState.preflightChecker.hasBlockingIssues && !appState.preflightChecker.isRunning
     }
 }
 
